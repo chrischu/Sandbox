@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\rules\filteringprojectruleproxy.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Utilities;
+
+namespace SolutionInspector.Api.Rules
+{
+  internal class FilteringProjectRuleProxy : IProjectRule
+  {
+    private readonly INameFilter _filter;
+    private readonly IProjectRule _rule;
+
+    public FilteringProjectRuleProxy (INameFilter filter, IProjectRule rule)
+    {
+      _filter = filter;
+      _rule = rule;
+    }
+
+    public IEnumerable&lt;IRuleViolation&gt; Evaluate (IProject target)
+    {
+      if (_filter.IsMatch(target.Name))
+        return _rule.Evaluate(target);
+
+      return Enumerable.Empty&lt;IRuleViolation&gt;();
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[14,5,14,77,1],[16,7,16,24,1],[17,7,17,20,1],[18,5,18,6,1],[22,7,22,40,1],[23,9,23,39,1],[25,7,25,49,1]]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\rules\rulecollectionbuilder.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SolutionInspector.Api.Configuration.Rules;
+
+namespace SolutionInspector.Api.Rules
+{
+  internal interface IRuleCollectionBuilder
+  {
+    IRuleCollection Build (IRulesConfiguration rulesConfiguration);
+  }
+
+  internal class RuleCollectionBuilder : IRuleCollectionBuilder
+  {
+    private readonly IRuleTypeResolver _ruleTypeResolver;
+    private readonly IRuleConfigurationInstantiator _ruleConfigurationInstantiator;
+
+    public RuleCollectionBuilder (
+        IRuleTypeResolver ruleTypeResolver,
+        IRuleConfigurationInstantiator ruleConfigurationInstantiator)
+    {
+      _ruleTypeResolver = ruleTypeResolver;
+      _ruleConfigurationInstantiator = ruleConfigurationInstantiator;
+    }
+
+    public IRuleCollection Build (IRulesConfiguration rulesConfiguration)
+    {
+      var solutionRules = BuildSolutionRules(rulesConfiguration.SolutionRules);
+      var projectRules = BuildProjectRules(rulesConfiguration.ProjectRuleGroups);
+      var projectItemRules = BuildProjectItemRules(rulesConfiguration.ProjectItemRuleGroups);
+
+      return new RuleCollection(solutionRules, projectRules, projectItemRules);
+    }
+
+    private IEnumerable&lt;ISolutionRule&gt; BuildSolutionRules (IReadOnlyCollection&lt;IRuleConfiguration&gt; solutionRulesConfiguration)
+    {
+      return InstantiateRules&lt;ISolutionRule&gt;(solutionRulesConfiguration);
+    }
+
+    private IEnumerable&lt;IProjectRule&gt; BuildProjectRules (IReadOnlyCollection&lt;IProjectRuleGroupConfiguration&gt; projectRuleGroups)
+    {
+      foreach (var projectRuleGroup in projectRuleGroups)
+        foreach (var projectRule in InstantiateRules&lt;IProjectRule&gt;(projectRuleGroup.Rules))
+          yield return new FilteringProjectRuleProxy(projectRuleGroup.AppliesTo, projectRule);
+    }
+
+    private IEnumerable&lt;IProjectItemRule&gt; BuildProjectItemRules (IReadOnlyCollection&lt;IProjectItemRuleGroupConfiguration&gt; projectItemRuleGrousp)
+    {
+      foreach (var projectItemRuleGroup in projectItemRuleGrousp)
+        foreach (var projectItemRule in InstantiateRules&lt;IProjectItemRule&gt;(projectItemRuleGroup.Rules))
+          yield return new FilteringProjectItemRuleProxy(projectItemRuleGroup.AppliesTo, projectItemRuleGroup.InProject, projectItemRule);
+    }
+
+    private IEnumerable&lt;TRule&gt; InstantiateRules&lt;TRule&gt; (IReadOnlyCollection&lt;IRuleConfiguration&gt; ruleConfigurations)
+        where TRule : IRule
+    {
+      return from ruleConfiguration in ruleConfigurations
+        let ruleTypeInfo = _ruleTypeResolver.Resolve(ruleConfiguration.RuleType)
+        let config = _ruleConfigurationInstantiator.Instantiate(ruleTypeInfo.ConfigurationType, ruleConfiguration.Configuration)
+        let constructorParameters = ruleTypeInfo.IsConfigurable ? new object[] { config } : new object[0]
+        select (TRule) ruleTypeInfo.Constructor.Invoke(constructorParameters);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[18,5,20,70,1],[22,7,22,44,1],[23,7,23,70,1],[24,5,24,6,1],[28,7,28,80,1],[29,7,29,82,1],[30,7,30,94,1],[32,7,32,80,1],[37,7,37,74,1],[57,7,58,9,1],[58,81,59,9,1],[59,129,60,9,1],[60,106,61,16,1],[61,78,61,79,1],[58,9,58,81,1],[59,9,59,129,1],[42,40,42,57,1],[42,16,42,36,1],[43,37,43,91,1],[43,18,43,33,1],[44,11,44,95,1],[43,34,43,36,1],[42,37,42,39,1],[45,5,45,6,1],[49,44,49,65,1],[49,16,49,40,1],[50,41,50,103,1],[50,18,50,37,1],[51,11,51,139,1],[50,38,50,40,1],[49,41,49,43,1],[52,5,52,6,1],[60,9,60,106,1],[61,16,61,78,1]]);
+    </script>
+  </body>
+</html>

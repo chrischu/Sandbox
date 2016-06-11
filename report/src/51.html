@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\project.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Xml;
+using System.Xml.Linq;
+using SystemInterface.IO;
+using SystemWrapper.IO;
+using JetBrains.Annotations;
+using Microsoft.Build.Construction;
+using Microsoft.Build.Evaluation;
+using SolutionInspector.Api.Configuration.MsBuildParsing;
+using SolutionInspector.Api.Extensions;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a MSBuild project.
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public interface IProject : IRuleTarget, IDisposable
+  {
+    /// &lt;summary&gt;
+    ///   Contains advanced/raw properties of the underlying MSBuild file.
+    /// &lt;/summary&gt;
+    IAdvancedProject Advanced { get; }
+
+    /// &lt;summary&gt;
+    ///   The project&#39;s name.
+    /// &lt;/summary&gt;
+    string Name { get; }
+
+    /// &lt;summary&gt;
+    ///   The name in which the project is stored, relative to the solution file.
+    /// &lt;/summary&gt;
+    string FolderName { get; }
+
+    /// &lt;summary&gt;
+    ///   A &lt;see cref=&quot;IFileInfo&quot; /&gt; that represents the project file.
+    /// &lt;/summary&gt;
+    IFileInfo ProjectFile { get; }
+
+    /// &lt;summary&gt;
+    ///   A &lt;see cref=&quot;XDocument&quot; /&gt; that represents the project file.
+    /// &lt;/summary&gt;
+    XDocument ProjectXml { get; }
+
+    /// &lt;summary&gt;
+    ///   All &lt;see cref=&quot;BuildConfiguration&quot; /&gt;s in the project.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;BuildConfiguration&gt; BuildConfigurations { get; }
+
+    /// &lt;summary&gt;
+    ///   The project&#39;s default namespace.
+    /// &lt;/summary&gt;
+    string DefaultNamespace { get; }
+
+    /// &lt;summary&gt;
+    ///   The project&#39;s assembly name.
+    /// &lt;/summary&gt;
+    string AssemblyName { get; }
+
+    /// &lt;summary&gt;
+    ///   The project&#39;s target framework version.
+    /// &lt;/summary&gt;
+    Version TargetFrameworkVersion { get; }
+
+    /// &lt;summary&gt;
+    ///   The project&#39;s output type.
+    /// &lt;/summary&gt;
+    ProjectOutputType OutputType { get; }
+
+    /// &lt;summary&gt;
+    ///   A &lt;see cref=&quot;IFileInfo&quot; /&gt; that represents the project&#39;s NuGet packages file.
+    /// &lt;/summary&gt;
+    IFileInfo NuGetPackagesFile { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of referenced &lt;see cref=&quot;NuGetPackage&quot; /&gt;s.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;NuGetPackage&gt; NuGetPackages { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of DLLs referenced from the GAC.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;GacReference&gt; GacReferences { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of DLLs referenced from NuGet.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;NuGetReference&gt; NuGetReferences { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of DLLs referenced from the file system.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;FileReference&gt; FileReferences { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of referenced projects.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;ProjectReference&gt; ProjectReferences { get; }
+
+    /// &lt;summary&gt;
+    ///   The solution the project is contained in.
+    /// &lt;/summary&gt;
+    ISolution Solution { get; }
+
+    /// &lt;summary&gt;
+    ///   A collection of all project items contained in the project.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;IProjectItem&gt; ProjectItems { get; }
+
+    /// &lt;summary&gt;
+    ///   The project configuration file (App.config/Web.config).
+    /// &lt;/summary&gt;
+    IConfigurationProjectItem ConfigurationProjectItem { get; }
+  }
+
+  internal sealed class Project : IProject
+  {
+    private readonly ProjectCollection _projectCollection;
+    private readonly IMsBuildParsingConfiguration _msBuildParsingConfiguration;
+    private Lazy&lt;ClassifiedReferences&gt; _classifiedReferences;
+    private Lazy&lt;XDocument&gt; _projectXml;
+
+    private Project (
+        ProjectCollection projectCollection,
+        ISolution solution,
+        ProjectInSolution projectInSolution,
+        Microsoft.Build.Evaluation.Project project,
+        IMsBuildParsingConfiguration msBuildParsingConfiguration)
+    {
+      _projectCollection = projectCollection;
+
+      Solution = solution;
+
+      _msBuildParsingConfiguration = msBuildParsingConfiguration;
+      Name = projectInSolution.ProjectName;
+
+      BuildConfigurations =
+          projectInSolution.ProjectConfigurations.Values.Select(c =&gt; new BuildConfiguration(c.ConfigurationName, c.PlatformName)).Distinct().ToArray();
+
+      Advanced = new AdvancedProject(this, project, projectInSolution);
+
+      NuGetPackages = BuildNuGetPackages(NuGetPackagesFile).ToArray();
+
+      _classifiedReferences = new Lazy&lt;ClassifiedReferences&gt;(() =&gt; ClassifyReferences(project, NuGetPackages, solution));
+
+      ProjectItems = BuildProjectItems(project.ItemsIgnoringCondition).ToArray();
+
+      ConfigurationProjectItem = BuildConfigurationProjectItem();
+
+      _projectXml = new Lazy&lt;XDocument&gt;(() =&gt; XDocument.Load(ProjectFile.FullName));
+    }
+
+    private IConfigurationProjectItem BuildConfigurationProjectItem ()
+    {
+      var configurationItem = ProjectItems.SingleOrDefault(
+          i =&gt;
+              string.Equals(i.OriginalInclude.Unevaluated, &quot;App.config&quot;, StringComparison.InvariantCultureIgnoreCase)
+              || string.Equals(i.OriginalInclude.Unevaluated, &quot;Web.config&quot;, StringComparison.InvariantCultureIgnoreCase));
+
+      if (configurationItem == null)
+        return null;
+
+      return new ConfigurationProjectItem(this, configurationItem);
+    }
+
+    private IEnumerable&lt;ProjectItem&gt; BuildProjectItems (ICollection&lt;Microsoft.Build.Evaluation.ProjectItem&gt; msBuildProjectItems)
+    {
+      var projectItems =
+          msBuildProjectItems.Where(i =&gt; !i.IsImported &amp;&amp; _msBuildParsingConfiguration.IsValidProjectItemType(i.ItemType))
+              .Select(p =&gt; ProjectItem.FromMsBuildProjectItem(this, p))
+              .ToLookup(i =&gt; i.OriginalInclude.Evaluated);
+
+      foreach (var projectItem in projectItems.SelectMany(g =&gt; g))
+      {
+        var dependentUpon = projectItem.Metadata.GetValueOrDefault(&quot;DependentUpon&quot;);
+
+        if (dependentUpon != null)
+        {
+          var dependentUponInclude = Path.Combine(Path.GetDirectoryName(projectItem.OriginalInclude.Evaluated).AssertNotNull(), dependentUpon);
+
+          var parents = projectItems[dependentUponInclude];
+          foreach (var parent in parents)
+            projectItem.SetParent(parent);
+        }
+      }
+
+      return projectItems.SelectMany(g =&gt; g);
+    }
+
+    public IAdvancedProject Advanced { get; }
+
+    public ISolution Solution { get; }
+
+    public string Name { get; }
+    public string FolderName =&gt; Path.GetFileName(Advanced.MsBuildProject.DirectoryPath);
+    public IFileInfo ProjectFile =&gt; new FileInfoWrap(Advanced.MsBuildProject.FullPath);
+    public XDocument ProjectXml =&gt; _projectXml.Value;
+    public IFileInfo NuGetPackagesFile =&gt; new FileInfoWrap(Path.Combine(Advanced.MsBuildProject.DirectoryPath, &quot;packages.config&quot;));
+
+    public IReadOnlyCollection&lt;BuildConfiguration&gt; BuildConfigurations { get; }
+
+    public string DefaultNamespace =&gt; Advanced.Properties.GetValueOrDefault(&quot;RootNamespace&quot;)?.DefaultValue;
+    public string AssemblyName =&gt; Advanced.Properties.GetValueOrDefault(&quot;AssemblyName&quot;)?.DefaultValue;
+
+    public Version TargetFrameworkVersion
+    {
+      get
+      {
+        var targetFrameworkVersion = Advanced.Properties.GetValueOrDefault(&quot;TargetFrameworkVersion&quot;)?.DefaultValue;
+        return targetFrameworkVersion != null ? Version.Parse(targetFrameworkVersion.TrimStart(&#39;v&#39;)) : null;
+      }
+    }
+
+    public ProjectOutputType OutputType
+      =&gt; Advanced.Properties.GetValueOrDefault(&quot;OutputType&quot;)?.DefaultValue == &quot;Exe&quot; ? ProjectOutputType.Executable : ProjectOutputType.Library;
+
+    public IReadOnlyCollection&lt;NuGetPackage&gt; NuGetPackages { get; }
+
+    public IReadOnlyCollection&lt;GacReference&gt; GacReferences =&gt; _classifiedReferences.Value.GacReferences;
+    public IReadOnlyCollection&lt;NuGetReference&gt; NuGetReferences =&gt; _classifiedReferences.Value.NuGetReferences;
+    public IReadOnlyCollection&lt;FileReference&gt; FileReferences =&gt; _classifiedReferences.Value.FileReferences;
+    public IReadOnlyCollection&lt;ProjectReference&gt; ProjectReferences =&gt; _classifiedReferences.Value.ProjectReferences;
+
+    public IReadOnlyCollection&lt;IProjectItem&gt; ProjectItems { get; }
+
+    public IConfigurationProjectItem ConfigurationProjectItem { get; }
+
+    string IRuleTarget.Identifier =&gt; Path.GetFileName(Advanced.MsBuildProject.FullPath);
+    string IRuleTarget.FullPath =&gt; Advanced.MsBuildProject.FullPath;
+
+    private IEnumerable&lt;NuGetPackage&gt; BuildNuGetPackages (IFileInfo nuGetPackagesFile)
+    {
+      if (!nuGetPackagesFile.Exists)
+        yield break;
+
+      var doc = new XmlDocument();
+      doc.Load(nuGetPackagesFile.FullName);
+
+      foreach (var packageElement in doc.SelectNodes(&quot;//package&quot;).AssertNotNull().Cast&lt;XmlElement&gt;())
+        yield return NuGetPackage.FromXmlElement(packageElement);
+    }
+
+    private ClassifiedReferences ClassifyReferences (
+        Microsoft.Build.Evaluation.Project project,
+        IReadOnlyCollection&lt;NuGetPackage&gt; nuGetPackages,
+        ISolution solution)
+    {
+      var projectReferences =
+          project.GetItemsIgnoringCondition(&quot;ProjectReference&quot;)
+              .Select(
+                  r =&gt;
+                      new ProjectReference(
+                          solution.Projects.Single(
+                              p =&gt; p.ProjectFile.FullName == Path.GetFullPath(Path.Combine(project.DirectoryPath, r.EvaluatedInclude)))));
+
+      var dllReferences =
+          project.GetItemsIgnoringCondition(&quot;Reference&quot;)
+              .Select(r =&gt; new ReferenceItem(r.EvaluatedInclude, r.Metadata.ToDictionary(m =&gt; m.Name, m =&gt; m.EvaluatedValue)));
+
+      var gacReferences = new List&lt;GacReference&gt;();
+      var fileReferences = new List&lt;FileReference&gt;();
+      var nuGetReferences = new List&lt;NuGetReference&gt;();
+
+      foreach (var reference in dllReferences)
+      {
+        if (reference.HintPath == null)
+        {
+          gacReferences.Add(new GacReference(reference.AssemblyName));
+          continue;
+        }
+
+        var matchingNuGetPackage =
+            nuGetPackages.SingleOrDefault(p =&gt; reference.HintPath.StartsWith($@&quot;..\packages\{p.PackageDirectoryName}&quot;, StringComparison.Ordinal));
+
+        if (matchingNuGetPackage != null)
+          nuGetReferences.Add(
+              new NuGetReference(
+                  matchingNuGetPackage,
+                  reference.AssemblyName,
+                  reference.Metadata.GetValueOrDefault(&quot;Private&quot;) == &quot;True&quot;,
+                  reference.HintPath));
+        else
+          fileReferences.Add(new FileReference(reference.AssemblyName, reference.HintPath));
+      }
+
+      return new ClassifiedReferences(gacReferences, fileReferences, nuGetReferences, projectReferences);
+    }
+
+    [SuppressMessage (&quot;Microsoft.Reliability&quot;, &quot;CA2000:Dispose objects before losing scope&quot;, Justification = &quot;Disposal happens in Dispose().&quot;)]
+    public static Project FromSolution (
+        ISolution solution,
+        ProjectInSolution projectInSolution,
+        IMsBuildParsingConfiguration msBuildParsingConfiguration)
+    {
+      var projectCollection = new ProjectCollection();
+      var msBuildProject = new Microsoft.Build.Evaluation.Project(
+          projectInSolution.AbsolutePath,
+          null,
+          null,
+          projectCollection,
+          ProjectLoadSettings.IgnoreMissingImports);
+
+      var project = new Project(
+          projectCollection,
+          solution,
+          projectInSolution,
+          msBuildProject,
+          msBuildParsingConfiguration);
+
+      return project;
+    }
+
+    private class ReferenceItem
+    {
+      public AssemblyName AssemblyName { get; }
+
+      public string HintPath =&gt; Metadata.GetValueOrDefault(&quot;HintPath&quot;);
+
+      public IReadOnlyDictionary&lt;string, string&gt; Metadata { get; }
+
+      public ReferenceItem (string include, IReadOnlyDictionary&lt;string, string&gt; metadata)
+      {
+        AssemblyName = new AssemblyName(include);
+        Metadata = metadata;
+      }
+    }
+
+    private class ClassifiedReferences
+    {
+      public IReadOnlyCollection&lt;GacReference&gt; GacReferences { get; }
+      public IReadOnlyCollection&lt;FileReference&gt; FileReferences { get; }
+      public IReadOnlyCollection&lt;NuGetReference&gt; NuGetReferences { get; }
+      public IReadOnlyCollection&lt;ProjectReference&gt; ProjectReferences { get; }
+
+      public ClassifiedReferences (
+          IEnumerable&lt;GacReference&gt; gacReferences,
+          IEnumerable&lt;FileReference&gt; fileReferences,
+          IEnumerable&lt;NuGetReference&gt; nuGetReferences,
+          IEnumerable&lt;ProjectReference&gt; projectReferences)
+      {
+        GacReferences = gacReferences.ToArray();
+        FileReferences = fileReferences.ToArray();
+        NuGetReferences = nuGetReferences.ToArray();
+        ProjectReferences = projectReferences.ToArray();
+      }
+    }
+
+    public void Dispose ()
+    {
+      _projectCollection.UnloadAllProjects();
+      _projectCollection.Dispose();
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[136,7,136,46,1],[138,7,138,27,1],[140,7,140,66,1],[141,7,141,44,1],[143,7,144,70,1],[144,129,144,152,1],[146,7,146,72,1],[148,7,148,71,1],[150,7,150,68,1],[150,120,150,122,1],[152,7,152,82,1],[154,7,154,66,1],[156,7,156,47,1],[156,83,156,85,1],[157,5,157,6,1],[161,7,163,15,1],[164,121,164,123,1],[166,7,166,37,1],[167,9,167,21,1],[169,7,169,68,1],[174,7,175,42,1],[175,122,176,28,1],[176,71,177,30,1],[177,57,177,59,1],[179,35,179,64,1],[179,65,179,66,1],[179,16,179,31,1],[181,9,181,85,1],[183,9,183,35,1],[185,11,185,144,1],[187,11,187,60,1],[188,34,188,41,1],[188,20,188,30,1],[189,13,189,43,1],[188,31,188,33,1],[179,32,179,34,1],[193,7,193,43,1],[193,44,193,46,1],[196,40,196,44,1],[198,33,198,37,1],[200,26,200,30,1],[201,33,201,88,1],[202,37,202,87,1],[203,36,203,53,1],[204,43,204,131,1],[206,74,206,78,1],[208,39,208,107,1],[209,35,209,102,1],[215,9,215,116,1],[216,9,216,109,1],[221,10,221,143,1],[223,62,223,66,1],[225,63,225,104,1],[226,67,226,110,1],[227,65,227,107,1],[228,71,228,116,1],[230,61,230,65,1],[232,65,232,69,1],[234,38,234,88,1],[235,36,235,68,1],[254,7,258,23,1],[260,137,260,139,1],[262,7,264,28,1],[264,126,264,128,1],[266,7,266,52,1],[267,7,267,54,1],[268,7,268,56,1],[270,33,270,46,1],[270,16,270,29,1],[272,9,272,40,1],[274,11,274,71,1],[275,11,275,20,1],[278,9,279,48,1],[279,145,279,147,1],[281,9,281,42,1],[282,11,287,40,1],[289,11,289,93,1],[270,30,270,32,1],[292,7,292,106,1],[301,7,301,55,1],[302,7,307,53,1],[309,7,314,40,1],[316,7,316,22,1],[356,7,356,46,1],[357,7,357,36,1],[358,5,358,6,1],[156,47,156,83,1],[175,42,175,122,1],[176,28,176,71,1],[321,42,321,46,1],[323,33,323,71,1],[325,61,325,65,1],[327,7,327,90,1],[329,9,329,50,1],[330,9,330,29,1],[331,7,331,8,1],[336,64,336,68,1],[337,66,337,70,1],[338,68,338,72,1],[339,72,339,76,1],[341,7,345,59,1],[347,9,347,49,1],[348,9,348,51,1],[349,9,349,53,1],[350,9,350,57,1],[351,7,351,8,1],[150,68,150,120,1],[144,70,144,129,1],[163,15,164,121,1],[177,30,177,57,1],[179,64,179,65,1],[193,43,193,44,1],[264,28,264,95,1],[264,101,264,108,1],[264,124,264,126,1],[264,95,264,101,1],[264,108,264,124,1],[239,7,239,37,1],[240,9,240,21,1],[242,7,242,35,1],[243,7,243,44,1],[245,38,245,101,1],[245,16,245,34,1],[246,9,246,66,1],[245,35,245,37,1],[247,5,247,6,1],[258,23,260,36,1],[260,135,260,137,1],[260,36,260,135,1],[279,48,279,145,1]]);
+    </script>
+  </body>
+</html>

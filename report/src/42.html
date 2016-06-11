@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectproperty.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  ///// &lt;summary&gt;
+  /////   Represents an property of a &lt;see cref=&quot;IProject&quot; /&gt;.
+  ///// &lt;/summary&gt;
+  //public interface IProjectProperty : IProjectPropertyBase
+  //{
+  //  /// &lt;summary&gt;
+  //  ///   The property&#39;s value. Variables contained in the value are not expanded.
+  //  /// &lt;/summary&gt;
+  //  string Value { get; }
+  //}
+
+  /// &lt;summary&gt;
+  ///   Represents an property of a &lt;see cref=&quot;IProject&quot; /&gt; and its (possibly multiple) occurrences in the MSBuild file.
+  /// &lt;/summary&gt;
+  public interface IProjectProperty
+  {
+    /// &lt;summary&gt;
+    ///   The property&#39;s name.
+    /// &lt;/summary&gt;
+    string Name { get; }
+
+    /// &lt;summary&gt;
+    ///   The property&#39;s value given all other properties have their default values.
+    /// &lt;/summary&gt;
+    string DefaultValue { get; }
+
+    /// &lt;summary&gt;
+    ///   The property&#39;s (possibly multiple) occurrences.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;IProjectPropertyOccurrence&gt; Occurrences { get; }
+  }
+
+  [DebuggerDisplay (&quot;{Name}&quot;)]
+  internal class ProjectProperty : IProjectProperty, IEnumerable&lt;IProjectPropertyOccurrence&gt;
+  {
+    private readonly List&lt;IProjectPropertyOccurrence&gt; _occurrences = new List&lt;IProjectPropertyOccurrence&gt;();
+
+    public string Name { get; }
+    public string DefaultValue { get; }
+    public IReadOnlyCollection&lt;IProjectPropertyOccurrence&gt; Occurrences =&gt; _occurrences;
+
+    public ProjectProperty (string name, string defaultValue)
+    {
+      Name = name;
+      DefaultValue = defaultValue;
+    }
+
+    public void Add (IProjectPropertyOccurrence occurence)
+    {
+      _occurrences.Add(occurence);
+    }
+
+    [ExcludeFromCodeCoverage]
+    public IEnumerator&lt;IProjectPropertyOccurrence&gt; GetEnumerator ()
+    {
+      return _occurrences.GetEnumerator();
+    }
+
+    [ExcludeFromCodeCoverage]
+    IEnumerator IEnumerable.GetEnumerator ()
+    {
+      return GetEnumerator();
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[46,26,46,30,1],[47,34,47,38,1],[48,75,48,87,1],[44,5,44,109,1],[50,5,50,62,1],[52,7,52,19,1],[53,7,53,35,1],[54,5,54,6,1],[58,7,58,35,1],[59,5,59,6,1]]);
+    </script>
+  </body>
+</html>
