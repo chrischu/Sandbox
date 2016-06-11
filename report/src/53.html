@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectitembuildaction.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a MSBuild project item build action (e.g. None, Compile).
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public sealed class ProjectItemBuildAction : IEquatable&lt;ProjectItemBuildAction&gt;
+  {
+    private readonly string _value;
+
+    /// &lt;summary&gt;
+    ///   Represents the &lt;c&gt;None&lt;/c&gt; build action.
+    /// &lt;/summary&gt;
+    public static readonly ProjectItemBuildAction None = new ProjectItemBuildAction(&quot;None&quot;);
+
+    /// &lt;summary&gt;
+    ///   Represents the &lt;c&gt;Compile&lt;/c&gt; build action.
+    /// &lt;/summary&gt;
+    public static readonly ProjectItemBuildAction Compile = new ProjectItemBuildAction(&quot;Compile&quot;);
+
+    /// &lt;summary&gt;
+    ///   Represents the &lt;c&gt;Content&lt;/c&gt; build action.
+    /// &lt;/summary&gt;
+    public static readonly ProjectItemBuildAction Content = new ProjectItemBuildAction(&quot;Content&quot;);
+
+    /// &lt;summary&gt;
+    ///   Represents the &lt;c&gt;EmbeddedResource&lt;/c&gt; build action.
+    /// &lt;/summary&gt;
+    public static readonly ProjectItemBuildAction EmbeddedResource = new ProjectItemBuildAction(&quot;EmbeddedResource&quot;);
+
+    /// &lt;summary&gt;
+    ///   Allows the creation of a custom &lt;see cref=&quot;ProjectItemBuildAction&quot; /&gt;.
+    /// &lt;/summary&gt;
+    public static ProjectItemBuildAction Custom (string value)
+    {
+      return new ProjectItemBuildAction(value);
+    }
+
+    private ProjectItemBuildAction (string value)
+    {
+      _value = value;
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public bool Equals ([CanBeNull] ProjectItemBuildAction other)
+    {
+      if (ReferenceEquals(null, other))
+        return false;
+      if (ReferenceEquals(this, other))
+        return true;
+      return string.Equals(_value, other._value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public override bool Equals ([CanBeNull] object obj)
+    {
+      if (ReferenceEquals(null, obj))
+        return false;
+      if (ReferenceEquals(this, obj))
+        return true;
+      return obj is ProjectItemBuildAction &amp;&amp; Equals((ProjectItemBuildAction) obj);
+    }
+
+    [ExcludeFromCodeCoverage]
+    public override int GetHashCode ()
+    {
+      return _value.GetHashCode();
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public static bool operator == ([CanBeNull] ProjectItemBuildAction left, [CanBeNull] ProjectItemBuildAction right)
+    {
+      return Equals(left, right);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public static bool operator != ([CanBeNull] ProjectItemBuildAction left, [CanBeNull] ProjectItemBuildAction right)
+    {
+      return !(left == right);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public static bool operator == ([CanBeNull] ProjectItemBuildAction left, [CanBeNull] string right)
+    {
+      return Equals(left?._value, right);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public static bool operator != ([CanBeNull] ProjectItemBuildAction left, [CanBeNull] string right)
+    {
+      return !(left == right);
+    }
+
+    public override string ToString ()
+    {
+      return _value;
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[40,7,40,48,1],[43,5,43,50,1],[45,7,45,22,1],[46,5,46,6,1],[51,7,51,40,1],[52,9,52,22,1],[53,7,53,40,1],[54,9,54,21,1],[55,7,55,50,1],[61,7,61,38,1],[62,9,62,22,1],[63,7,63,38,1],[64,9,64,21,1],[65,7,65,84,1],[77,7,77,34,1],[83,7,83,31,1],[89,7,89,42,1],[95,7,95,31,1],[100,7,100,21,1],[18,5,18,93,1],[23,5,23,99,1],[28,5,28,99,1],[33,5,33,117,1]]);
+    </script>
+  </body>
+</html>

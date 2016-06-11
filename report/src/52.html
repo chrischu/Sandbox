@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectitem.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using SystemInterface.IO;
+using SystemWrapper.IO;
+using JetBrains.Annotations;
+using SolutionInspector.Api.Extensions;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a MSBuild project item.
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public interface IProjectItem : IRuleTarget
+  {
+    /// &lt;summary&gt;
+    ///   The original MSBuild project item.
+    /// &lt;/summary&gt;
+    Microsoft.Build.Evaluation.ProjectItem OriginalProjectItem { get; set; }
+
+
+    /// &lt;summary&gt;
+    ///   The project the item is contained in.
+    /// &lt;/summary&gt;
+    IProject Project { get; }
+
+    /// &lt;summary&gt;
+    ///   The (file) name of the project item.
+    /// &lt;/summary&gt;
+    string Name { get; }
+
+    /// &lt;summary&gt;
+    ///   The original (just as in the MSBuild file) include path (relative to the project file) of the project item.
+    /// &lt;/summary&gt;
+    IProjectItemInclude OriginalInclude { get; }
+
+    /// &lt;summary&gt;
+    ///   The path (relative to the project file) of the project item.
+    ///   Differs from &lt;see cref=&quot;OriginalInclude&quot; /&gt; for links.
+    /// &lt;/summary&gt;
+    IProjectItemInclude Include { get; }
+
+    /// &lt;summary&gt;
+    ///   The build action that is configured for the project item.
+    /// &lt;/summary&gt;
+    ProjectItemBuildAction BuildAction { get; }
+
+    /// &lt;summary&gt;
+    ///   A &lt;see cref=&quot;IFileInfo&quot; /&gt; pointing to the project item.
+    /// &lt;/summary&gt;
+    IFileInfo File { get; }
+
+    /// &lt;summary&gt;
+    ///   The project item&#39;s location inside the project file.
+    /// &lt;/summary&gt;
+    IProjectLocation Location { get; }
+
+    /// &lt;summary&gt;
+    ///   Metadata for the project item.
+    /// &lt;/summary&gt;
+    IReadOnlyDictionary&lt;string, string&gt; Metadata { get; }
+
+    /// &lt;summary&gt;
+    ///   The custom tool that is configured for the project item.
+    /// &lt;/summary&gt;
+    string CustomTool { get; }
+
+    /// &lt;summary&gt;
+    ///   The custom tool namespace that is configured for the project item.
+    /// &lt;/summary&gt;
+    string CustomToolNamespace { get; }
+
+    /// &lt;summary&gt;
+    ///   The project item&#39;s parent project item (if any).
+    /// &lt;/summary&gt;
+    IProjectItem Parent { get; }
+
+    /// &lt;summary&gt;
+    ///   The project item&#39;s child project items (if any).
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;IProjectItem&gt; Children { get; }
+  }
+
+  [PublicAPI]
+  internal class ProjectItem : IProjectItem
+  {
+    private readonly List&lt;ProjectItem&gt; _children = new List&lt;ProjectItem&gt;();
+    private Lazy&lt;string&gt; _identifier;
+
+    public Microsoft.Build.Evaluation.ProjectItem OriginalProjectItem { get; set; }
+
+    public IProject Project { get; }
+
+    public string Name =&gt; Path.GetFileName(OriginalInclude.Evaluated);
+
+    public string Identifier =&gt; _identifier.Value;
+
+    public string FullPath =&gt; File.FullName;
+
+    public IProjectItemInclude OriginalInclude { get; }
+    public IProjectItemInclude Include { get; }
+
+    public ProjectItemBuildAction BuildAction { get; }
+
+    public IFileInfo File { get; }
+
+    public IProjectLocation Location { get; }
+
+    public IReadOnlyDictionary&lt;string, string&gt; Metadata { get; }
+
+    public string CustomTool =&gt; Metadata.GetValueOrDefault(&quot;Generator&quot;);
+    public string CustomToolNamespace =&gt; Metadata.GetValueOrDefault(&quot;CustomToolNamespace&quot;);
+
+
+    public IProjectItem Parent { get; private set; }
+
+    public IReadOnlyCollection&lt;IProjectItem&gt; Children =&gt; _children;
+
+    protected ProjectItem (
+        IProject project,
+        Microsoft.Build.Evaluation.ProjectItem msBuildProjectItem)
+    {
+      Project = project;
+      OriginalInclude = new ProjectItemInclude(msBuildProjectItem.EvaluatedInclude, msBuildProjectItem.UnevaluatedInclude);
+      OriginalProjectItem = msBuildProjectItem;
+
+      var linkMetadata = msBuildProjectItem.DirectMetadata.SingleOrDefault(d =&gt; d.Name == &quot;Link&quot;);
+      Include = linkMetadata != null ? new ProjectItemInclude(linkMetadata.EvaluatedValue, linkMetadata.UnevaluatedValue) : OriginalInclude;
+
+      BuildAction = ProjectItemBuildAction.Custom(msBuildProjectItem.ItemType);
+      var fullPath = Path.GetFullPath(Path.Combine(project.ProjectFile.DirectoryName, msBuildProjectItem.EvaluatedInclude));
+      File = new FileInfoWrap(fullPath);
+
+      Location = new ProjectLocation(msBuildProjectItem.Xml.Location.Line, msBuildProjectItem.Xml.Location.Column);
+      Metadata = msBuildProjectItem.Metadata.ToDictionary(m =&gt; m.Name, m =&gt; m.EvaluatedValue);
+
+      _identifier = new Lazy&lt;string&gt;(CreateIdentifier);
+    }
+
+    private string CreateIdentifier ()
+    {
+      var sb = new StringBuilder();
+
+      sb.Append(Parent != null ? Parent.Identifier : Project.Identifier);
+      sb.Append(&#39;/&#39;);
+
+      var include = Include.Evaluated.Replace(&#39;\\&#39;, &#39;/&#39;);
+      if (Parent != null)
+        include = include.Split(&#39;/&#39;).Last();
+
+      sb.Append(include);
+
+      return sb.ToString();
+    }
+
+    internal void SetParent (ProjectItem parent)
+    {
+      parent._children.Add(this);
+      Parent = parent;
+    }
+
+    public static ProjectItem FromMsBuildProjectItem (IProject project, Microsoft.Build.Evaluation.ProjectItem msBuildProjectItem)
+    {
+      return new ProjectItem(project, msBuildProjectItem);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[94,73,94,77,1],[94,78,94,82,1],[96,31,96,35,1],[98,27,98,70,1],[100,33,100,50,1],[102,31,102,44,1],[104,50,104,54,1],[105,42,105,46,1],[107,49,107,53,1],[109,29,109,33,1],[111,40,111,44,1],[113,59,113,63,1],[115,33,115,72,1],[116,42,116,91,1],[119,34,119,38,1],[119,39,119,51,1],[121,58,121,67,1],[91,5,91,76,1],[123,5,125,67,1],[127,7,127,25,1],[128,7,128,124,1],[129,7,129,48,1],[131,7,131,81,1],[131,97,131,99,1],[132,7,132,141,1],[134,7,134,80,1],[135,7,135,125,1],[136,7,136,41,1],[138,7,138,116,1],[139,7,139,64,1],[139,70,139,77,1],[139,93,139,95,1],[141,7,141,56,1],[142,5,142,6,1],[146,7,146,36,1],[148,7,148,74,1],[149,7,149,22,1],[151,7,151,58,1],[152,7,152,26,1],[153,9,153,45,1],[155,7,155,26,1],[157,7,157,28,1],[162,7,162,34,1],[163,7,163,23,1],[164,5,164,6,1],[168,7,168,59,1],[131,81,131,97,1],[139,64,139,70,1],[139,77,139,93,1]]);
+    </script>
+  </body>
+</html>

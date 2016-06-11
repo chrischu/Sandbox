@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectiteminclude.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
+using SolutionInspector.Api.Utilities;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents the include (path relative to the csproj file) of an &lt;see cref=&quot;IProjectItem&quot; /&gt;.
+  /// &lt;/summary&gt;
+  public interface IProjectItemInclude
+  {
+    /// &lt;summary&gt;
+    ///   The evaluated include (variables have been replaced).
+    /// &lt;/summary&gt;
+    string Evaluated { get; }
+
+    /// &lt;summary&gt;
+    ///   The evaluated include (variables have *not* been replaced).
+    /// &lt;/summary&gt;
+    string Unevaluated { get; }
+  }
+
+  internal sealed class ProjectItemInclude : IProjectItemInclude, IEquatable&lt;ProjectItemInclude&gt;
+  {
+    public string Evaluated { get; }
+    public string Unevaluated { get; }
+
+    public ProjectItemInclude (string evaluated, string unevaluated)
+    {
+      Evaluated = evaluated;
+      Unevaluated = unevaluated;
+    }
+
+    public bool Equals ([CanBeNull] ProjectItemInclude other)
+    {
+      if (ReferenceEquals(null, other))
+        return false;
+      if (ReferenceEquals(this, other))
+        return true;
+      return string.Equals(Evaluated, other.Evaluated) &amp;&amp; string.Equals(Unevaluated, other.Unevaluated);
+    }
+
+    public override bool Equals ([CanBeNull] object obj)
+    {
+      if (ReferenceEquals(null, obj))
+        return false;
+      if (ReferenceEquals(this, obj))
+        return true;
+      return obj is ProjectItemInclude &amp;&amp; Equals((ProjectItemInclude) obj);
+    }
+
+    [ExcludeFromCodeCoverage]
+    public override int GetHashCode ()
+    {
+      return HashCodeHelper.GetHashCode(Evaluated, Unevaluated);
+    }
+
+    public static bool operator == (ProjectItemInclude left, ProjectItemInclude right)
+    {
+      return Equals(left, right);
+    }
+
+    public static bool operator != (ProjectItemInclude left, ProjectItemInclude right)
+    {
+      return !Equals(left, right);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[26,31,26,35,1],[27,33,27,37,1],[29,5,29,69,1],[31,7,31,29,1],[32,7,32,33,1],[33,5,33,6,1],[37,7,37,40,1],[38,9,38,22,1],[39,7,39,40,1],[40,9,40,21,1],[41,7,41,105,1],[46,7,46,38,1],[47,9,47,22,1],[48,7,48,38,1],[49,9,49,21,1],[50,7,50,76,1],[61,7,61,34,1],[66,7,66,35,1]]);
+    </script>
+  </body>
+</html>

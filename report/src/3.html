@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\utilities\namefilterconverter.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Configuration;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using JetBrains.Annotations;
+
+namespace SolutionInspector.Api.Utilities
+{
+  /// &lt;summary&gt;
+  ///   Configuration converter that converts between &lt;see cref=&quot;string&quot; /&gt; and &lt;see cref=&quot;NameFilter&quot; /&gt;.
+  /// &lt;/summary&gt;
+  public class NameFilterConverter : ConfigurationConverterBase
+  {
+    /// &lt;summary&gt;
+    ///   Converts a &lt;see cref=&quot;NameFilter&quot; /&gt; to a &lt;see cref=&quot;string&quot; /&gt;.
+    /// &lt;/summary&gt;
+    public override object ConvertTo ([CanBeNull] ITypeDescriptorContext ctx, [CanBeNull] CultureInfo ci, [CanBeNull] object value, Type type)
+    {
+      if (value == null)
+        return null;
+
+      if (value.GetType() != typeof(NameFilter))
+        throw new ArgumentException($&quot;Unsupported type &#39;{value.GetType()}&#39;, expected type &#39;{typeof(NameFilter)}&#39;.&quot;, nameof(value));
+
+      return value.ToString();
+    }
+
+    /// &lt;summary&gt;
+    ///   Converts a &lt;see cref=&quot;string&quot; /&gt; to a &lt;see cref=&quot;NameFilter&quot; /&gt;.
+    /// &lt;/summary&gt;
+    public override object ConvertFrom ([CanBeNull] ITypeDescriptorContext ctx, [CanBeNull] CultureInfo ci, [CanBeNull] object data)
+    {
+      if (data == null)
+        return null;
+
+      if (data.GetType() != typeof(string))
+        throw new ArgumentException($&quot;Unsupported type &#39;{data.GetType()}&#39;, expected type &#39;{typeof(string)}&#39;.&quot;, nameof(data));
+
+      var filterString = (string) data;
+      var partRegex = @&quot;((\+?|-)[\w.*]+)&quot;;
+      var regex = new Regex($&quot;^{partRegex}(;{partRegex})*$&quot;);
+
+      if (!regex.IsMatch(filterString))
+        throw new FormatException($&quot;The filter string &#39;{filterString}&#39; is not in the correct format.&quot;);
+
+      var parts = filterString.Split(&#39;;&#39;);
+
+      var includes = new List&lt;string&gt;();
+      var excludes = new List&lt;string&gt;();
+
+      foreach (var part in parts)
+        if (part[0] == &#39;-&#39;)
+          excludes.Add(part.TrimStart(&#39;-&#39;));
+        else
+          includes.Add(part.TrimStart(&#39;+&#39;));
+
+      return new NameFilter(includes, excludes);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[21,7,21,25,1],[22,9,22,21,1],[24,7,24,49,1],[25,9,25,132,1],[27,7,27,31,1],[35,7,35,24,1],[36,9,36,21,1],[38,7,38,44,1],[39,9,39,126,1],[41,7,41,40,1],[42,7,42,43,1],[43,7,43,62,1],[45,7,45,40,1],[46,9,46,104,1],[48,7,48,43,1],[50,7,50,41,1],[51,7,51,41,1],[53,28,53,33,1],[53,16,53,24,1],[54,9,54,28,1],[55,11,55,45,1],[57,11,57,45,1],[53,25,53,27,1],[59,7,59,49,1]]);
+    </script>
+  </body>
+</html>

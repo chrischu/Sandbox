@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectpropertycondition.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
+using Microsoft.Build.Construction;
+using SolutionInspector.Api.Utilities;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents the condition that must be fulfilled for the project property to be active.
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public interface IProjectPropertyCondition
+  {
+    /// &lt;summary&gt;
+    ///   The property&#39;s condition. This must be true for the property to be active.
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    string Self { get; }
+
+    /// &lt;summary&gt;
+    ///   The parent condition. This must also be true for the property to be active.
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    string Parent { get; }
+  }
+
+  [DebuggerDisplay (&quot;{DebuggerDisplay,nq}&quot;)]
+  internal sealed class ProjectPropertyCondition : IProjectPropertyCondition, IEquatable&lt;ProjectPropertyCondition&gt;
+  {
+    [CanBeNull]
+    public string Self { get; }
+
+    [CanBeNull]
+    public string Parent { get; }
+
+    public ProjectPropertyCondition ([CanBeNull] string self, [CanBeNull] string parent)
+    {
+      Self = ConvertCondition(self);
+      Parent = ConvertCondition(parent);
+    }
+
+    public ProjectPropertyCondition (ProjectPropertyElement element)
+        : this(element.Condition, element.Parent?.Condition)
+    {
+    }
+
+    private string ConvertCondition ([CanBeNull] string condition)
+    {
+      return string.IsNullOrWhiteSpace(condition) ? null : condition;
+    }
+
+    [ExcludeFromCodeCoverage]
+    private string DebuggerDisplay
+    {
+      get
+      {
+        if (Self == null)
+          return Parent;
+
+        if (Parent == null)
+          return Self;
+
+        return $&quot;{Parent} AND {Self}&quot;;
+      }
+    }
+
+    public bool Equals ([CanBeNull] ProjectPropertyCondition other)
+    {
+      if (ReferenceEquals(null, other))
+        return false;
+      if (ReferenceEquals(this, other))
+        return true;
+      return string.Equals(Self, other.Self) &amp;&amp; string.Equals(Parent, other.Parent);
+    }
+
+    public override bool Equals ([CanBeNull] object obj)
+    {
+      if (ReferenceEquals(null, obj))
+        return false;
+      if (ReferenceEquals(this, obj))
+        return true;
+      return obj is ProjectPropertyCondition &amp;&amp; Equals((ProjectPropertyCondition) obj);
+    }
+
+    [ExcludeFromCodeCoverage]
+    public override int GetHashCode ()
+    {
+      return HashCodeHelper.GetHashCode(Self, Parent);
+    }
+
+    public static bool operator == (ProjectPropertyCondition left, ProjectPropertyCondition right)
+    {
+      return Equals(left, right);
+    }
+
+    public static bool operator != (ProjectPropertyCondition left, ProjectPropertyCondition right)
+    {
+      return !Equals(left, right);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[33,26,33,30,1],[36,28,36,32,1],[38,5,38,89,1],[40,7,40,37,1],[41,7,41,41,1],[42,5,42,6,1],[45,11,45,61,1],[47,5,47,6,1],[51,7,51,70,1],[71,7,71,40,1],[72,9,72,22,1],[73,7,73,40,1],[74,9,74,21,1],[75,7,75,85,1],[80,7,80,38,1],[81,9,81,22,1],[82,7,82,38,1],[83,9,83,21,1],[84,7,84,88,1],[95,7,95,34,1],[100,7,100,35,1]]);
+    </script>
+  </body>
+</html>
