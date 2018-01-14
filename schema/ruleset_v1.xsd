@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="SolutionInspectorRuleset"
+           targetNamespace="http://chrischu.github.io/SolutionInspector/schema/ruleset_v1.xsd"
+           xmlns="http://chrischu.github.io/SolutionInspector/schema/ruleset_v1.xsd"
+           elementFormDefault="qualified"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://chrischu.github.io/SolutionInspector/schema/base_v1.xsd http://chrischu.github.io/SolutionInspector/schema/base_v1.xsd"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:base="http://chrischu.github.io/SolutionInspector/schema/base_v1.xsd">
+  <xs:import namespace="http://chrischu.github.io/SolutionInspector/schema/base_v1.xsd" schemaLocation="http://chrischu.github.io/SolutionInspector/schema/base_v1.xsd" />
+
+  <xs:element name="solutionInspectorRuleset">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="solutionRules" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="base:solutionRule" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="projectRules" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="projectRuleGroup" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="base:projectRule" minOccurs="0" maxOccurs="unbounded" />
+                  </xs:sequence>
+                  <xs:attribute name="appliesTo" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="projectItemRules" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="projectItemRuleGroup" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="base:projectItemRule" minOccurs="0" maxOccurs="unbounded" />
+                  </xs:sequence>
+                  <xs:attribute name="appliesTo" type="xs:string" use="required" />
+                  <xs:attribute name="inProject" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
