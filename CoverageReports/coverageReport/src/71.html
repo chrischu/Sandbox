@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\configuration\ruleassemblyimports\ruleassemblyimportsconfigurationsection.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
+using JetBrains.Annotations;
+
+namespace SolutionInspector.Api.Configuration.RuleAssemblyImports
+{
+  /// &lt;summary&gt;
+  ///   Configuration used to import rule assemblies.
+  /// &lt;/summary&gt;
+  public interface IRuleAssemblyImportsConfiguration
+  {
+    /// &lt;summary&gt;
+    ///   A collection of paths (files and directories) from which to load assemblies.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;string&gt; Imports { get; }
+  }
+
+  internal class RuleAssemblyImportsConfigurationSection : ConfigurationSection, IRuleAssemblyImportsConfiguration
+  {
+    public const string ExampleConfiguration = @&quot;&lt;ruleAssemblyImports&gt;
+  &lt;import path=&quot;&quot;C:\Path\To\Assembly.dll&quot;&quot; /&gt;
+&lt;/ruleAssemblyImports&gt;&quot;;
+
+    [UsedImplicitly]
+    [ConfigurationProperty (&quot;&quot;, IsRequired = true, IsKey = false, IsDefaultCollection = true)]
+    public RuleAssemblyImportsConfigurationCollection Imports =&gt; (RuleAssemblyImportsConfigurationCollection) base[&quot;&quot;];
+
+    IReadOnlyCollection&lt;string&gt; IRuleAssemblyImportsConfiguration.Imports =&gt; Imports.Select(i =&gt; i.Path).ToArray();
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[28,66,28,119,1],[30,78,30,98,1],[30,104,30,115,1],[30,98,30,104,1]]);
+    </script>
+  </body>
+</html>

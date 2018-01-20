@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\nugetreference.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Reflection;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a DLL reference via NuGet.
+  /// &lt;/summary&gt;
+  public interface INuGetReference : IDllReference
+  {
+    /// &lt;summary&gt;
+    ///   The NuGet package that created the reference.
+    /// &lt;/summary&gt;
+    INuGetPackage Package { get; }
+
+    /// &lt;summary&gt;
+    ///   &lt;c&gt;True&lt;/c&gt; if the reference is private, &lt;c&gt;false&lt;/c&gt; otherwise.
+    /// &lt;/summary&gt;
+    bool IsPrivate { get; }
+  }
+
+  internal class NuGetReference : DllReferenceBase, INuGetReference
+  {
+    public INuGetPackage Package { get; }
+
+    public bool IsPrivate { get; }
+
+    public NuGetReference (INuGetPackage package, AssemblyName assemblyName, bool isPrivate, string hintPath, string projectDirectory)
+        : base(assemblyName, projectDirectory, hintPath)
+    {
+      Package = package;
+      IsPrivate = isPrivate;
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[24,36,24,40,1],[26,29,26,33,1],[29,11,29,57,1],[31,7,31,25,1],[32,7,32,29,1],[33,5,33,6,1]]);
+    </script>
+  </body>
+</html>

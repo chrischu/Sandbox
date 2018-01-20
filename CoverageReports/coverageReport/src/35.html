@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\reporting\tableviolationreporter.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.IO;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Api.Utilities;
+
+namespace SolutionInspector.Api.Reporting
+{
+  internal class TableViolationReporter : ViolationReporterBase
+  {
+    private readonly IRuleViolationViewModelConverter _ruleViolationViewModelConverter;
+    private readonly ITableWriter _tableWriter;
+
+    public TableViolationReporter (TextWriter writer, IRuleViolationViewModelConverter ruleViolationViewModelConverter, ITableWriter tableWriter)
+        : base(writer)
+    {
+      _ruleViolationViewModelConverter = ruleViolationViewModelConverter;
+      _tableWriter = tableWriter;
+    }
+
+    protected override void Report (TextWriter writer, IEnumerable&lt;IRuleViolation&gt; violations)
+    {
+      var violationModels = _ruleViolationViewModelConverter.Convert(violations);
+      _tableWriter.Write(writer, violationModels, v =&gt; v.Index, v =&gt; v.Rule, v =&gt; v.Target, v =&gt; v.Message);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[15,11,15,23,1],[17,7,17,74,1],[18,7,18,34,1],[19,5,19,6,1],[23,7,23,82,1],[24,7,24,109,1],[25,5,25,6,1]]);
+    </script>
+  </body>
+</html>

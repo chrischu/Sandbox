@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.defaultrules\nugetreferencehintpathsmustbevalidrule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all &lt;see cref=&quot;INuGetReference&quot; /&gt;s in the project have correct hint paths (pointing to an actually
+  ///   existing file).
+  /// &lt;/summary&gt;
+  public class NuGetReferenceHintPathsMustBeValidRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate (IProject target)
+    {
+      return target.NuGetReferences.Where(r =&gt; !r.DllFile.Exists).Select(
+          r =&gt; new RuleViolation(
+              this,
+              target,
+              $&quot;The NuGet reference to package &#39;{r.Package.Id}&#39; has an invalid hint path (&#39;{r.HintPath}&#39;).&quot;));
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[18,7,18,48,1],[18,65,19,16,1],[22,109,22,111,1],[19,16,22,109,1],[18,48,18,65,1]]);
+    </script>
+  </body>
+</html>

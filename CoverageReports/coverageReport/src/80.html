@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\commands\solutioninspectorcommand.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using JetBrains.Annotations;
+using ManyConsole;
+
+namespace SolutionInspector.Api.Commands
+{
+  [PublicAPI]
+  internal interface IArgumentsBuilderWithSetValues&lt;out TArguments&gt;
+  {
+    IArgumentsBuilderWithSetValues&lt;TArguments&gt; Option&lt;T&gt; (
+        string longKey,
+        string shortKey,
+        string description,
+        Action&lt;TArguments, T&gt; setValue,
+        T defaultValue = default(T));
+
+    IArgumentsBuilderWithSetValues&lt;TArguments&gt; Flag (string longKey, string shortKey, string description, Action&lt;TArguments, bool&gt; setValue);
+  }
+
+  [PublicAPI]
+  internal interface IArgumentsBuilder&lt;out TArguments&gt;
+  {
+    IArgumentsBuilder&lt;TArguments&gt; Option&lt;T&gt; (
+        string longKey,
+        string shortKey,
+        string description,
+        Action&lt;TArguments, T&gt; setValue,
+        T defaultValue = default(T));
+
+    IArgumentsBuilder&lt;TArguments&gt; Flag (string longKey, string shortKey, string description, Action&lt;TArguments, bool&gt; setValue);
+
+    IArgumentsBuilderWithSetValues&lt;TArguments&gt; Values (Action&lt;IValueArgumentsBuilder&lt;TArguments&gt;&gt; configureValueArguments);
+  }
+
+  [PublicAPI]
+  internal interface IValueArgumentsBuilder&lt;out TArguments&gt;
+  {
+    IValueArgumentsBuilder&lt;TArguments&gt; Value (string name, Action&lt;TArguments, string&gt; setValue);
+  }
+
+  internal abstract class SolutionInspectorCommand&lt;TRawArguments, TParsedArguments&gt; : ConsoleCommand
+      where TRawArguments : new()
+  {
+    private readonly TRawArguments _rawArguments;
+    private readonly ArgumentsBuilder&lt;TRawArguments&gt; _rawArgumentsBuilder;
+    private TParsedArguments _parsedArguments;
+
+    [SuppressMessage (&quot;Microsoft.Usage&quot;, &quot;CA2214:DoNotCallOverridableMethodsInConstructors&quot;)]
+    protected SolutionInspectorCommand (string command, string description)
+    {
+      IsCommand(command, description);
+      SkipsCommandSummaryBeforeRunning();
+      _rawArguments = new TRawArguments();
+      _rawArgumentsBuilder = new ArgumentsBuilder&lt;TRawArguments&gt;(this, _rawArguments);
+      // ReSharper disable once VirtualMemberCallInContructor
+      SetupArguments(_rawArgumentsBuilder);
+    }
+
+    protected abstract void SetupArguments (IArgumentsBuilder&lt;TRawArguments&gt; argumentsBuilder);
+
+    public sealed override int? OverrideAfterHandlingArgumentsBeforeRun ([NotNull] string[] remainingArguments)
+    {
+      _rawArgumentsBuilder.HandleRemainingArguments(remainingArguments);
+      _parsedArguments = ValidateAndParseArguments(_rawArguments, message =&gt; new ConsoleHelpAsException(message));
+
+      return base.OverrideAfterHandlingArgumentsBeforeRun(remainingArguments);
+    }
+
+    protected abstract TParsedArguments ValidateAndParseArguments (TRawArguments arguments, Func&lt;string, Exception&gt; reportError);
+
+    public sealed override int Run ([NotNull] string[] remainingArguments)
+    {
+      return Run(_parsedArguments);
+    }
+
+    protected abstract int Run (TParsedArguments arguments);
+
+    private class ArgumentsBuilder&lt;TArguments&gt; : IArgumentsBuilder&lt;TArguments&gt;, IArgumentsBuilderWithSetValues&lt;TArguments&gt;
+        where TArguments : new()
+    {
+      private readonly ConsoleCommand _command;
+      private readonly TArguments _arguments;
+      private readonly ValueArgumentsBuilder _valueArgumentsBuilder = new ValueArgumentsBuilder();
+
+      public ArgumentsBuilder (ConsoleCommand command, TArguments arguments)
+      {
+        _command = command;
+        _arguments = arguments;
+      }
+
+      public IArgumentsBuilder&lt;TArguments&gt; Option&lt;T&gt; (
+          string longKey,
+          string shortKey,
+          string description,
+          Action&lt;TArguments, T&gt; setValue,
+          T defaultValue = default(T))
+      {
+        setValue(_arguments, defaultValue);
+        _command.HasOption&lt;T&gt;($&quot;{shortKey}|{longKey}=&quot;, description, v =&gt; setValue(_arguments, v));
+        return this;
+      }
+
+
+      public IArgumentsBuilder&lt;TArguments&gt; Flag (string longKey, string shortKey, string description, Action&lt;TArguments, bool&gt; setValue)
+      {
+        _command.HasOption($&quot;{shortKey}|{longKey}&quot;, description, v =&gt; setValue(_arguments, v != null));
+        return this;
+      }
+
+      public IArgumentsBuilderWithSetValues&lt;TArguments&gt; Values (Action&lt;IValueArgumentsBuilder&lt;TArguments&gt;&gt; configureValueArguments)
+      {
+        configureValueArguments(_valueArgumentsBuilder);
+        _valueArgumentsBuilder.SetupAdditionalArguments(_command);
+        return this;
+      }
+
+      [ExcludeFromCodeCoverage]
+      IArgumentsBuilderWithSetValues&lt;TArguments&gt; IArgumentsBuilderWithSetValues&lt;TArguments&gt;.Option&lt;T&gt; (
+          string longKey,
+          string shortKey,
+          string description,
+          Action&lt;TArguments, T&gt; setValue,
+          T defaultValue)
+      {
+        return (IArgumentsBuilderWithSetValues&lt;TArguments&gt;) Option(longKey, shortKey, description, setValue);
+      }
+
+      [ExcludeFromCodeCoverage]
+      IArgumentsBuilderWithSetValues&lt;TArguments&gt; IArgumentsBuilderWithSetValues&lt;TArguments&gt;.Flag (
+          string longKey,
+          string shortKey,
+          string description,
+          Action&lt;TArguments, bool&gt; setValue)
+      {
+        return (IArgumentsBuilderWithSetValues&lt;TArguments&gt;) Flag(longKey, shortKey, description, setValue);
+      }
+
+      private class ValueArgumentsBuilder : IValueArgumentsBuilder&lt;TArguments&gt;
+      {
+        private readonly List&lt;ValueArgument&gt; _valueArguments = new List&lt;ValueArgument&gt;();
+
+        private string AdditionalArgumentsString =&gt; string.Join(&quot; &quot;, _valueArguments.Select(a =&gt; $&quot;&lt;{a.Name}&gt;&quot;));
+
+        public IValueArgumentsBuilder&lt;TArguments&gt; Value (string name, Action&lt;TArguments, string&gt; setValue)
+        {
+          _valueArguments.Add(new ValueArgument(name, setValue));
+          return this;
+        }
+
+        private class ValueArgument
+        {
+          public string Name { get; }
+          public Action&lt;TArguments, string&gt; SetValueAction { get; }
+
+          public ValueArgument (string name, Action&lt;TArguments, string&gt; setValueAction)
+          {
+            Name = name;
+            SetValueAction = setValueAction;
+          }
+        }
+
+        public void SetupAdditionalArguments (ConsoleCommand command)
+        {
+          command.HasAdditionalArguments(_valueArguments.Count, AdditionalArgumentsString);
+        }
+
+        public void ParseAdditionalArguments (TArguments arguments, string[] remainingArguments)
+        {
+          Trace.Assert(remainingArguments.Length == _valueArguments.Count);
+
+          for (int i = 0; i &lt; remainingArguments.Length; i++)
+            _valueArguments[i].SetValueAction(arguments, remainingArguments[i]);
+        }
+      }
+
+      public void HandleRemainingArguments (string[] remainingArguments)
+      {
+        _valueArgumentsBuilder?.ParseAdditionalArguments(_arguments, remainingArguments);
+      }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[53,5,53,76,1],[55,7,55,39,1],[56,7,56,42,1],[57,7,57,43,1],[58,7,58,87,1],[60,7,60,44,1],[61,5,61,6,1],[67,7,67,73,1],[68,7,68,78,1],[68,113,68,115,1],[70,7,70,79,1],[77,7,77,36,1],[87,7,87,99,1],[89,7,89,77,1],[91,9,91,28,1],[92,9,92,32,1],[93,7,93,8,1],[102,9,102,44,1],[103,9,103,75,1],[103,98,103,100,1],[104,9,104,21,1],[110,9,110,71,1],[110,102,110,104,1],[111,9,111,21,1],[116,9,116,57,1],[117,9,117,67,1],[118,9,118,21,1],[182,9,182,90,1],[183,7,183,8,1],[146,53,146,98,1],[146,111,146,113,1],[150,11,150,66,1],[151,11,151,23,1],[168,11,168,92,1],[169,9,169,10,1],[173,11,173,76,1],[175,16,175,25,1],[176,13,176,81,1],[175,58,175,61,1],[175,27,175,56,1],[177,9,177,10,1],[144,9,144,90,1],[156,32,156,36,1],[157,62,157,66,1],[159,11,159,88,1],[161,13,161,25,1],[162,13,162,45,1],[163,11,163,12,1],[146,98,146,111,1],[103,75,103,98,1],[110,71,110,102,1],[68,78,68,113,1]]);
+    </script>
+  </body>
+</html>

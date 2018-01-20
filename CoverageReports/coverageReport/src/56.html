@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\solution.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using JetBrains.Annotations;
+using Microsoft.Build.Construction;
+using SolutionInspector.Api.Configuration.MsBuildParsing;
+using SolutionInspector.Api.Extensions;
+using SolutionInspector.Api.Rules;
+using Wrapperator.Interfaces.IO;
+using Wrapperator.Wrappers;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a VisualStudio solution.
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public interface ISolution : IRuleTarget, IDisposable
+  {
+    /// &lt;summary&gt;
+    ///   The solution&#39;s name.
+    /// &lt;/summary&gt;
+    string Name { get; }
+
+    /// &lt;summary&gt;
+    ///   The directory where the solution lies.
+    /// &lt;/summary&gt;
+    IDirectoryInfo SolutionDirectory { get; }
+
+    /// &lt;summary&gt;
+    ///   All &lt;see cref=&quot;IProject&quot; /&gt; contained in the solution.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;IProject&gt; Projects { get; }
+
+    /// &lt;summary&gt;
+    ///   All &lt;see cref=&quot;BuildConfiguration&quot; /&gt;s in the solution.
+    /// &lt;/summary&gt;
+    IReadOnlyCollection&lt;BuildConfiguration&gt; BuildConfigurations { get; }
+
+    /// &lt;summary&gt;
+    ///   Returns the project with a matching &lt;paramref name=&quot;projectGuid&quot; /&gt; or &lt;see langword=&quot;null&quot; /&gt; if no such project can be found.
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    IProject GetProjectByProjectGuid (Guid projectGuid);
+
+    /// &lt;summary&gt;
+    ///   Returns the project point to by the given &lt;paramref name=&quot;absoluteProjectPath&quot; /&gt; or &lt;see langword=&quot;null&quot; /&gt; if no such project can be found.
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    IProject GetProjectByAbsoluteProjectFilePath (string absoluteProjectPath);
+  }
+
+  internal sealed class Solution : ISolution
+  {
+    private readonly string _solutionPath;
+    private readonly SolutionFile _solutionFile;
+
+    private Solution (string solutionPath, IMsBuildParsingConfiguration msBuildParsingConfiguration)
+    {
+      _solutionPath = solutionPath;
+      Name = Path.GetFileNameWithoutExtension(solutionPath);
+      SolutionDirectory = Wrapper.Wrap(new DirectoryInfo(Path.GetDirectoryName(solutionPath).AssertNotNull()));
+      _solutionFile = SolutionFile.Parse(solutionPath);
+
+      Projects =
+          _solutionFile.ProjectsInOrder.Where(p =&gt; p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat)
+              .Select(p =&gt; Project.FromSolution(this, p, msBuildParsingConfiguration))
+              .ToArray();
+      BuildConfigurations = _solutionFile.SolutionConfigurations.Select(c =&gt; new BuildConfiguration(c.ConfigurationName, c.PlatformName)).ToArray();
+    }
+
+    public string Name { get; }
+    public IDirectoryInfo SolutionDirectory { get; }
+    public IReadOnlyCollection&lt;IProject&gt; Projects { get; }
+    public IReadOnlyCollection&lt;BuildConfiguration&gt; BuildConfigurations { get; }
+
+    public IProject GetProjectByProjectGuid (Guid projectGuid)
+    {
+      return Projects.SingleOrDefault(p =&gt; p.Guid == projectGuid);
+    }
+
+    public IProject GetProjectByAbsoluteProjectFilePath (string absoluteProjectPath)
+    {
+      return Projects.SingleOrDefault(p =&gt; p.ProjectFile.FullName == absoluteProjectPath);
+    }
+
+    string IRuleTarget.Identifier =&gt; Path.GetFileName(_solutionPath);
+    string IRuleTarget.FullPath =&gt; _solutionPath;
+
+    public static Solution Load (string solutionFilePath, IMsBuildParsingConfiguration msBuildParsingConfiguration)
+    {
+      var fullPath = Path.GetFullPath(solutionFilePath);
+      return new Solution(fullPath, msBuildParsingConfiguration);
+    }
+
+    public void Dispose ()
+    {
+      foreach (var project in Projects)
+        project.Dispose();
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[61,7,61,36,1],[62,7,62,61,1],[63,7,63,112,1],[64,7,64,56,1],[66,7,67,52,1],[67,111,68,28,1],[68,86,69,26,1],[70,7,70,78,1],[70,137,70,149,1],[71,5,71,6,1],[73,26,73,30,1],[74,47,74,51,1],[75,53,75,57,1],[76,74,76,78,1],[80,7,80,44,1],[80,65,80,67,1],[85,7,85,44,1],[85,89,85,91,1],[88,38,88,69,1],[89,36,89,49,1],[93,7,93,57,1],[94,7,94,66,1],[99,31,99,39,1],[99,16,99,27,1],[100,9,100,27,1],[99,28,99,30,1],[101,5,101,6,1],[68,28,68,86,1],[67,52,67,111,1],[70,78,70,137,1],[80,44,80,65,1],[85,44,85,89,1]]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>d:\development\solutioninspector\src\solutioninspector.api\objectmodel\projectreference.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.IO;
+using JetBrains.Annotations;
+using Wrapperator.Interfaces.IO;
+using Wrapperator.Wrappers;
+
+namespace SolutionInspector.Api.ObjectModel
+{
+  /// &lt;summary&gt;
+  ///   Represents a reference to another &lt;see cref=&quot;IProject&quot;/&gt; in the same solution.
+  /// &lt;/summary&gt;
+  [PublicAPI]
+  public interface IProjectReference
+  {
+    /// &lt;summary&gt;
+    ///   The referenced project.
+    /// &lt;/summary&gt;
+    IProject Project { get; }
+
+    /// &lt;summary&gt;
+    /// The original MSBuild project item representing the reference.
+    /// &lt;/summary&gt;
+    Microsoft.Build.Evaluation.ProjectItem OriginalProjectItem { get; }
+
+    /// &lt;summary&gt;
+    /// The include pointing to the referenced .csproj file.
+    /// &lt;/summary&gt;
+    string Include { get; }
+
+    /// &lt;summary&gt;
+    ///   A &lt;see cref=&quot;IFileInfo&quot; /&gt; that represents the referenced project file.
+    /// &lt;/summary&gt;
+    IFileInfo File { get; }
+
+    /// &lt;summary&gt;
+    /// The referenced project&#39;s GUID.
+    /// &lt;/summary&gt;
+    Guid? ReferencedProjectGuid { get; }
+
+    /// &lt;summary&gt;
+    /// The referenced project&#39;s name.
+    /// &lt;/summary&gt;
+    string ReferencedProjectName { get; }
+  }
+
+  internal class ProjectReference : IProjectReference
+  {
+    public IProject Project { get; }
+    public Microsoft.Build.Evaluation.ProjectItem OriginalProjectItem { get; }
+    public string Include { get; }
+    public IFileInfo File { get; }
+    public Guid? ReferencedProjectGuid { get; }
+    public string ReferencedProjectName { get; }
+
+    public ProjectReference (ISolution solution, Microsoft.Build.Evaluation.ProjectItem projectItem)
+    {
+      OriginalProjectItem = projectItem;
+      Include = projectItem.EvaluatedInclude;
+
+      var fullPath = Path.GetFullPath(Path.Combine(projectItem.Project.DirectoryPath, Include));
+      File = Wrapper.Wrap(new FileInfo(fullPath));
+      Project = solution.GetProjectByAbsoluteProjectFilePath(fullPath);
+
+      Guid referencedProjectGuid;
+      if (Guid.TryParse(projectItem.GetMetadataValue(&quot;Project&quot;), out referencedProjectGuid))
+        ReferencedProjectGuid = referencedProjectGuid;
+
+      ReferencedProjectName = projectItem.GetMetadataValue(&quot;Name&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[48,31,48,35,1],[49,73,49,77,1],[50,29,50,33,1],[51,29,51,33,1],[52,42,52,46,1],[53,43,53,47,1],[55,5,55,101,1],[57,7,57,41,1],[58,7,58,46,1],[60,7,60,97,1],[61,7,61,51,1],[62,7,62,72,1],[65,7,65,93,1],[66,9,66,55,1],[68,7,68,68,1],[69,5,69,6,1]]);
+    </script>
+  </body>
+</html>
