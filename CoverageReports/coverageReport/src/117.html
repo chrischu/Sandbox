@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector\Commands\InitializeCommand.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.IO;
+using SolutionInspector.Commons.Console;
+using SolutionInspector.Commons.Extensions;
+using Wrapperator.Interfaces.IO;
+using Wrapperator.Interfaces.Reflection;
+
+namespace SolutionInspector.Commands
+{
+  internal class InitializeCommand : ConsoleCommandBase&lt;InitializeCommand.RawArguments, InitializeCommand.ParsedArguments&gt;
+  {
+    private readonly IConsoleHelper _consoleHelper;
+    private readonly IFileStatic _file;
+    private readonly IAssembly _resourceAssembly;
+
+    public InitializeCommand (IAssembly resourceAssembly, IFileStatic file, IConsoleHelper consoleHelper)
+      : base(&quot;initialize&quot;, &quot;Creates a new SolutionInspector configuration file or overwrites an existing one.&quot;)
+    {
+      _resourceAssembly = resourceAssembly;
+      _file = file;
+      _consoleHelper = consoleHelper;
+    }
+
+    protected override void SetupArguments (IArgumentsBuilder&lt;RawArguments&gt; argumentsBuilder)
+    {
+      argumentsBuilder
+          .Flag(&quot;force&quot;, &quot;f&quot;, &quot;Overwrite file if it exists without asking for confirmation.&quot;, (a, v) =&gt; a.Force = v)
+          .Values(c =&gt; c.Value(&quot;configFilePath&quot;, (a, v) =&gt; a.ConfigFilePath = v));
+    }
+
+    protected override ParsedArguments ValidateAndParseArguments (RawArguments arguments)
+    {
+      return new ParsedArguments(arguments.ConfigFilePath, arguments.Force);
+    }
+
+    protected override int Run (ParsedArguments arguments)
+    {
+      if (_file.Exists(arguments.ConfigFilePath) &amp;&amp; !arguments.Force)
+      {
+        if(!_consoleHelper.Confirm($&quot;File &#39;{arguments.ConfigFilePath}&#39; already exists. Do you want to overwrite it?&quot;))
+          return ReportAbortion();
+      }
+
+      using (var sourceStream = _resourceAssembly.GetManifestResourceStream(&quot;SolutionInspector.Template.SolutionInspectorConfig&quot;).AssertNotNull())
+      using (var destinationStream = _file.Open(arguments.ConfigFilePath, FileMode.Create))
+      {
+        sourceStream.CopyTo(destinationStream);
+      }
+
+      return 0;
+    }
+
+    public class RawArguments
+    {
+      public string ConfigFilePath { get; set; }
+      public bool Force { get; set; }
+    }
+
+    public class ParsedArguments
+    {
+      public ParsedArguments (string configFilePath, bool force)
+      {
+        ConfigFilePath = configFilePath;
+        Force = force;
+      }
+
+      public string ConfigFilePath { get; }
+      public bool Force { get; }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[17,9,17,112,1],[19,7,19,44,1],[20,7,20,20,1],[21,7,21,38,1],[26,7,27,105,1],[27,105,27,116,1],[27,116,28,24,1],[28,24,28,60,1],[28,60,28,80,1],[28,80,28,81,1],[28,24,28,81,1],[28,81,28,83,1],[26,7,28,83,1],[33,7,33,77,1],[38,7,38,70,1],[40,9,40,119,1],[41,11,41,35,1],[44,14,44,146,1],[45,14,45,91,1],[47,9,47,48,1],[48,7,48,8,1],[50,7,50,16,1],[61,7,61,65,1],[63,9,63,41,1],[64,9,64,23,1]]);
+    </script>
+  </body>
+</html>

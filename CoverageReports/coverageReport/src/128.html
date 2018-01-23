@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectItemMustHaveCustomToolSetRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies project items have custom tool (&lt;see cref=&quot;ExpectedCustomTool&quot; /&gt;) and custom tool namespace (&lt;see cref=&quot;ExpectedCustomToolNamespace&quot; /&gt;) set,
+  /// &lt;/summary&gt;
+  [Description(
+      &quot;Verifies project items have custom tool and custom tool namespace set that is configured via &#39;expectedCustomTool&#39; &quot; +
+      &quot;and &#39;expectedCustomToolNamespace&#39;.&quot;)]
+  public class ProjectItemMustHaveCustomToolSetRule : ProjectItemRule
+  {
+    /// &lt;summary&gt;
+    ///   The expected custom tool.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description(&quot;The expected custom tool.&quot;)]
+    public string ExpectedCustomTool
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;summary&gt;
+    ///   The expected custom tool namespace.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description(&quot;The expected custom tool namespace.&quot;)]
+    public string ExpectedCustomToolNamespace
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProjectItem target)
+    {
+      if ((target.CustomTool ?? &quot;&quot;) != ExpectedCustomTool)
+        yield return
+            new RuleViolation(
+                this,
+                target,
+                $&quot;Unexpected value for custom tool, was &#39;{target.CustomTool}&#39; but should be &#39;{ExpectedCustomTool}&#39;.&quot;);
+
+      if ((target.CustomToolNamespace ?? &quot;&quot;) != ExpectedCustomToolNamespace)
+        yield return
+            new RuleViolation(
+                this,
+                target,
+                $&quot;Unexpected value for custom tool namespace, was &#39;{target.CustomToolNamespace}&#39; &quot; +
+                $&quot;but should be &#39;{ExpectedCustomToolNamespace}&#39;.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[25,14,25,45,1],[26,14,26,42,1],[36,14,36,45,1],[37,14,37,42,1],[43,7,43,59,1],[44,9,48,119,1],[50,7,50,77,1],[51,9,56,68,1],[57,5,57,6,1]]);
+    </script>
+  </body>
+</html>

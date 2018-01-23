@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectItemMustHaveCorrectBuildActionRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies project items have the build action set that is configured via &lt;see cref=&quot;ExpectedBuildAction&quot; /&gt;.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies project items have the build action set that is configured in &#39;expectedBuildAction&#39;.&quot;)]
+  public class ProjectItemMustHaveCorrectBuildActionRule : ProjectItemRule
+  {
+    /// &lt;summary&gt;
+    ///   The expected build action.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The expected build action.&quot;)]
+    public string ExpectedBuildAction
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProjectItem target)
+    {
+      if (target.BuildAction != ExpectedBuildAction)
+        yield return
+            new RuleViolation(
+              this,
+              target,
+              $&quot;Unexpected build action was &#39;{target.BuildAction}&#39;, but should be &#39;{ExpectedBuildAction}&#39;.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[23,14,23,45,1],[24,14,24,42,1],[30,7,30,53,1],[31,9,35,110,1],[36,5,36,6,1]]);
+    </script>
+  </body>
+</html>

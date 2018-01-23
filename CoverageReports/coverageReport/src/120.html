@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\NonDevelopmentNuGetReferencesShouldHaveIsPrivateSetToTrueRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all non-development &lt;see cref=&quot;INuGetReference&quot; /&gt;s in the project have their &#39;IsPrivate&#39; flag (also referred to as
+  ///   &#39;Copy Local&#39;) set to true.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that all non-development NuGet references in the project have their &#39;IsPrivate&#39; flag &quot; +
+                &quot;(also referred to as &#39;Copy Local&#39;) set to true.&quot;)]
+  public class NonDevelopmentNuGetReferencesShouldHaveIsPrivateSetToTrueRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      return target.NuGetReferences.Where(r =&gt; !r.Package.IsDevelopmentDependency &amp;&amp; !r.IsPrivate).Select(
+        r =&gt; new RuleViolation(
+          this,
+          target,
+          $&quot;The NuGet reference to package &#39;{r.Package.Id}&#39; is not a development dependency and therefore should has its &#39;IsPrivate&#39; flag set &quot; +
+          &quot;to true.&quot;));
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[21,7,21,48,1],[21,48,21,98,1],[21,98,22,14,1],[22,14,26,22,1],[26,22,26,24,1],[21,7,26,24,1]]);
+    </script>
+  </body>
+</html>

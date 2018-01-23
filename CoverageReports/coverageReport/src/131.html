@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectMustProvideXmlDocumentationRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that a project is configured so that XML documentation is generated.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that a project is configured so that XML documentation is generated.&quot;)]
+  public class ProjectMustProvideXmlDocumentationRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      foreach (var matchingBuildConfig in target.BuildConfigurations)
+      {
+        var properties = target.Advanced.EvaluateProperties(matchingBuildConfig);
+
+        var documentationFile = properties.GetValueOrDefault(&quot;DocumentationFile&quot;)?.Value;
+
+        if (documentationFile == null)
+        {
+          yield return
+              new RuleViolation(this, target, $&quot;In the build configuration &#39;{matchingBuildConfig}&#39; the XML documentation configuration is missing.&quot;);
+        }
+        else
+        {
+          var outputPath = properties.GetValueOrDefault(&quot;OutputPath&quot;)?.Value;
+          var expectedDocumentationFile = $&quot;{outputPath}{target.AssemblyName}.XML&quot;;
+
+          if (!string.Equals(documentationFile, expectedDocumentationFile, StringComparison.OrdinalIgnoreCase))
+            yield return
+                new RuleViolation(
+                  this,
+                  target,
+                  $&quot;In the build configuration &#39;{matchingBuildConfig}&#39; the XML documentation &quot; +
+                  $&quot;configuration is invalid (was: &#39;{documentationFile}&#39;, expected: &#39;{expectedDocumentationFile}&#39;).&quot;);
+        }
+      }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,16,20,39,1],[20,40,20,42,1],[20,43,20,69,1],[22,9,22,82,1],[24,9,24,90,1],[26,9,26,39,1],[28,11,29,150,1],[30,9,30,10,1],[33,11,33,78,1],[34,11,34,84,1],[36,11,36,112,1],[37,13,42,119,1],[44,7,44,8,1],[45,5,45,6,1]]);
+    </script>
+  </body>
+</html>

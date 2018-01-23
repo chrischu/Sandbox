@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector\Utilities\ConfigurationLoader.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.IO;
+using SolutionInspector.Api.Configuration.Ruleset;
+using SolutionInspector.Configuration;
+using Wrapperator.Interfaces.IO;
+
+namespace SolutionInspector.Utilities
+{
+  internal interface IConfigurationLoader
+  {
+    IRulesetConfiguration LoadRulesConfig (string configurationFile);
+  }
+
+  internal class ConfigurationLoader : IConfigurationLoader
+  {
+    private readonly IConfigurationManager _configurationManager;
+    private readonly IFileStatic _file;
+
+    public ConfigurationLoader (IFileStatic file, IConfigurationManager configurationManager)
+    {
+      _file = file;
+      _configurationManager = configurationManager;
+    }
+
+    public IRulesetConfiguration LoadRulesConfig (string configurationFile)
+    {
+      if (!_file.Exists(configurationFile))
+        throw new FileNotFoundException($&quot;Could not find configuration file &#39;{configurationFile}&#39;.&quot;);
+
+      return _configurationManager.LoadDocument&lt;RulesetConfigurationDocument&gt;(configurationFile);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[18,5,18,94,1],[20,7,20,20,1],[21,7,21,52,1],[26,7,26,44,1],[27,9,27,102,1],[29,7,29,98,1]]);
+    </script>
+  </body>
+</html>

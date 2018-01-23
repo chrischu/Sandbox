@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.Configuration\Validation\Static\StaticConfigurationTypeWalker.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.Configuration.Validation.Static
+{
+  internal class StaticConfigurationTypeWalker
+  {
+    public void Walk (Type configurationElementType, IStaticConfigurationVisitor visitor)
+    {
+      WalkInternal(configurationElementType, visitor, &quot;&quot;, new HashSet&lt;Type&gt; { configurationElementType });
+    }
+
+    private void WalkInternal (Type configurationElementType, IStaticConfigurationVisitor visitor, string propertyPath, HashSet&lt;Type&gt; typeHierarchy)
+    {
+      visitor.BeginTypeVisit(propertyPath, configurationElementType);
+
+      var subTypesToWalk = new List&lt;Tuple&lt;string, Type&gt;&gt;();
+
+      foreach (var property in configurationElementType.GetProperties())
+      {
+        var newPropertyPath = BuildPropertyPath(propertyPath, property);
+
+        var configurationPropertyAttribute = property.GetCustomAttributes&lt;ConfigurationPropertyAttribute&gt;().ToArray();
+
+        if (configurationPropertyAttribute.Length == 0)
+          continue;
+
+        if (configurationPropertyAttribute[0] is ConfigurationValueAttribute configurationValueAttribute)
+        {
+          visitor.VisitValue(newPropertyPath, property, configurationValueAttribute);
+          continue;
+        }
+
+        if (configurationPropertyAttribute[0] is ConfigurationSubelementAttribute configurationSubelementAttribute)
+        {
+          subTypesToWalk.Add(Tuple.Create(newPropertyPath, configurationSubelementAttribute.GetSubelementType(property)));
+          visitor.VisitSubelement(newPropertyPath, property, configurationSubelementAttribute);
+          continue;
+        }
+
+        if (configurationPropertyAttribute[0] is ConfigurationCollectionAttribute configurationCollectionAttribute)
+        {
+          var collectionElementType = configurationCollectionAttribute.GetCollectionElementType(property);
+          if (collectionElementType != null)
+            subTypesToWalk.Add(Tuple.Create(newPropertyPath, collectionElementType));
+
+          visitor.VisitCollection(newPropertyPath, property, configurationCollectionAttribute);
+        }
+
+        if (configurationPropertyAttribute[0] is DynamicConfigurationCollectionAttribute dynamicConfigurationCollectionAttribute)
+        {
+          visitor.VisitDynamicCollection(newPropertyPath, property, dynamicConfigurationCollectionAttribute);
+        }
+      }
+
+      visitor.EndTypeVisit(propertyPath, configurationElementType);
+
+      foreach (var subTypeToWalk in subTypesToWalk.Where(t =&gt; !typeHierarchy.Contains(t.Item2)))
+        WalkInternal(subTypeToWalk.Item2, visitor, subTypeToWalk.Item1, new HashSet&lt;Type&gt;(typeHierarchy) { configurationElementType });
+    }
+
+    private string BuildPropertyPath (string previousPropertyPath, PropertyInfo property)
+    {
+      if (string.IsNullOrEmpty(previousPropertyPath))
+        return property.Name;
+      return previousPropertyPath + &quot;.&quot; + property.Name;
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[13,7,13,107,1],[18,7,18,70,1],[20,7,20,60,1],[22,16,22,28,1],[22,29,22,31,1],[22,32,22,72,1],[24,9,24,73,1],[26,9,26,119,1],[28,9,28,56,1],[31,9,31,106,1],[33,11,33,86,1],[34,11,34,20,1],[37,9,37,116,1],[39,11,39,123,1],[40,11,40,96,1],[41,11,41,20,1],[44,9,44,116,1],[46,11,46,107,1],[47,11,47,45,1],[48,13,48,86,1],[50,11,50,96,1],[53,9,53,130,1],[55,11,55,110,1],[59,7,59,68,1],[61,16,61,33,1],[61,34,61,36,1],[61,37,61,63,1],[61,63,61,95,1],[61,95,61,96,1],[61,37,61,96,1],[62,9,62,136,1],[67,7,67,54,1],[68,9,68,30,1],[69,7,69,57,1]]);
+    </script>
+  </body>
+</html>

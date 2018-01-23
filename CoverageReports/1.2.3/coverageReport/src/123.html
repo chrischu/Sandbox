@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectBuildConfigurationDependentPropertyRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.Configuration;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that a project&#39;s property has the expected value in the build configurations matched by the &lt;see cref=&quot;BuildConfigurationFilter&quot; /&gt;.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that a project&#39;s property has the expected value in the build configurations matched by the&quot; +
+                &quot;provided &#39;buildConfigurationFilter&#39;.&quot;)]
+  public class ProjectBuildConfigurationDependentPropertyRule : ProjectRule
+  {
+    /// &lt;summary&gt;
+    ///   Controls in which build configurations the &lt;see cref=&quot;Property&quot; /&gt; is checked against the &lt;see cref=&quot;ExpectedValue&quot; /&gt;.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;Controls in which build configurations the &#39;property&#39; is checked against the &#39;expectedValue&#39;.&quot;)]
+    public BuildConfigurationFilter BuildConfigurationFilter
+    {
+      get =&gt; GetConfigurationValue&lt;BuildConfigurationFilter&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;summary&gt;
+    ///   Name of the property to check.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;Name of the property to check.&quot;)]
+    public string Property
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;summary&gt;
+    ///   The expected property value to check against.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The expected property value to check against.&quot;)]
+    public string ExpectedValue
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      var matchingBuildConfigs = target.BuildConfigurations.Where(c =&gt; BuildConfigurationFilter.IsMatch(c));
+
+      foreach (var matchingBuildConfig in matchingBuildConfigs)
+      {
+        var properties = target.Advanced.EvaluateProperties(matchingBuildConfig);
+
+        var actualValue = properties.GetValueOrDefault(Property)?.Value;
+
+        if (actualValue != ExpectedValue)
+          yield return
+              new RuleViolation(
+                this,
+                target,
+                $&quot;Unexpected value for property &#39;{Property}&#39; in build configuration &#39;{matchingBuildConfig}&#39;, &quot; +
+                $&quot;was &#39;{actualValue ?? &quot;&lt;null&gt;&quot;}&#39; but should be &#39;{ExpectedValue}&#39;.&quot;);
+      }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[27,14,27,63,1],[28,14,28,42,1],[38,14,38,45,1],[39,14,39,42,1],[49,14,49,45,1],[50,14,50,42,1],[56,7,56,72,1],[56,72,56,107,1],[56,107,56,109,1],[56,7,56,109,1],[58,16,58,39,1],[58,40,58,42,1],[58,43,58,63,1],[60,9,60,82,1],[62,9,62,73,1],[64,9,64,42,1],[65,11,70,86,1],[72,5,72,6,1]]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\RequiredCompilationSymbolsProjectRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.Configuration;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+using SolutionInspector.Configuration;
+using SolutionInspector.Configuration.Attributes;
+using SolutionInspector.Configuration.Collections;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all the compilation symbols (configured in &lt;see cref=&quot;RequiredCompilationSymbols&quot; /&gt;) are configured in the
+  ///   project.
+  /// &lt;/summary&gt;
+  [Description(&quot;Verifies that all the compilation symbols (see &#39;requiredCompilationSymbols&#39;) are configured in the project.&quot;)]
+  public class RequiredCompilationSymbolsProjectRule : ProjectRule
+  {
+    /// &lt;summary&gt;
+    ///   All the required compilation symbols.
+    /// &lt;/summary&gt;
+    [ConfigurationCollection]
+    public IConfigurationElementCollection&lt;RequiredCompilationSymbolsConfigurationElement&gt; RequiredCompilationSymbols
+      =&gt; GetConfigurationCollection&lt;RequiredCompilationSymbolsConfigurationElement&gt;();
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate([NotNull] IProject target)
+    {
+      foreach (var config in RequiredCompilationSymbols)
+      {
+        var matchingBuildConfigs = target.BuildConfigurations.Where(c =&gt; config.BuildConfigurationFilter.IsMatch(c));
+
+        foreach (var matchingBuildConfig in matchingBuildConfigs)
+        {
+          var properties = target.Advanced.EvaluateProperties(matchingBuildConfig);
+
+          var defineConstants = properties.GetValueOrDefault(&quot;DefineConstants&quot;)?.Value;
+          var actualSymbols = new HashSet&lt;string&gt;(defineConstants?.Split(&#39;;&#39;) ?? Enumerable.Empty&lt;string&gt;());
+
+          if (config.RequiredCompilationSymbols != null)
+            foreach (var requiredSymbol in config.RequiredCompilationSymbols)
+              if (!actualSymbols.Contains(requiredSymbol))
+                yield return
+                    new RuleViolation(
+                      this,
+                      target,
+                      $&quot;In the build configuration &#39;{matchingBuildConfig}&#39; the required compilation symbol &#39;{requiredSymbol}&#39; was not found.&quot;);
+        }
+      }
+    }
+  }
+
+  /// &lt;summary&gt;
+  ///   Configuration for which compilation symbols (&lt;see cref=&quot;RequiredCompilationSymbols&quot; /&gt;) are required in the build configurations matching the
+  ///   &lt;see cref=&quot;BuildConfigurationFilter&quot; /&gt;.
+  /// &lt;/summary&gt;
+  public class RequiredCompilationSymbolsConfigurationElement : ConfigurationElement
+  {
+    /// &lt;summary&gt;
+    ///   Filter that controlls which build configuration this &lt;see cref=&quot;RequiredCompilationSymbolsConfigurationElement&quot; /&gt; applies to.
+    /// &lt;/summary&gt;
+    [Description(&quot;Filter that controlls which build configuration this rule applies to.&quot;)]
+    [ConfigurationValue]
+    public BuildConfigurationFilter BuildConfigurationFilter
+    {
+      get { return GetConfigurationValue&lt;BuildConfigurationFilter&gt;(); }
+      [UsedImplicitly] set { SetConfigurationValue(value); }
+    }
+
+    /// &lt;summary&gt;
+    ///   All the compilation symbols that are required and are therefore checked.
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    [Description(&quot;All the compilation symbols that are required and are therefore checked.&quot;)]
+    [ConfigurationValue]
+    public CommaSeparatedStringCollection RequiredCompilationSymbols =&gt; GetConfigurationValue&lt;CommaSeparatedStringCollection&gt;();
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[27,10,27,86,1],[32,16,32,26,1],[32,27,32,29,1],[32,30,32,56,1],[34,9,34,74,1],[34,74,34,116,1],[34,116,34,118,1],[34,9,34,118,1],[36,18,36,41,1],[36,42,36,44,1],[36,45,36,65,1],[38,11,38,84,1],[40,11,40,88,1],[41,11,41,110,1],[43,11,43,57,1],[44,22,44,40,1],[44,41,44,43,1],[44,44,44,77,1],[45,15,45,59,1],[46,17,50,144,1],[51,9,51,10,1],[52,7,52,8,1],[53,5,53,6,1],[69,13,69,70,1],[70,30,70,59,1],[79,73,79,128,1]]);
+    </script>
+  </body>
+</html>

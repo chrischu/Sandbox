@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectGuidsMustBeUniqueRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that every project has a unique GUID.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that every project has a unique GUID.&quot;)]
+  public class ProjectGuidsMustBeUniqueRule : SolutionRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] ISolution target)
+    {
+      return target.Projects.GroupBy(p =&gt; p.Guid).Where(g =&gt; g.ContainsMoreThanOne()).Select(
+        g =&gt;
+        {
+          var projectNames = g.ConvertAndJoin(p =&gt; $&quot;&#39;{p.Name}&#39;&quot;, &quot;, &quot;);
+          return new RuleViolation(this, target, $&quot;The project GUID &#39;{g.Key}&#39; is used in multiple projects ({projectNames}).&quot;);
+        });
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,7,20,43,1],[20,43,20,49,1],[20,49,20,62,1],[20,62,20,85,1],[20,85,23,11,1],[23,11,23,52,1],[23,52,23,65,1],[23,65,23,73,1],[23,11,23,73,1],[23,73,24,11,1],[24,11,24,128,1],[24,128,25,12,1],[20,7,25,12,1]]);
+    </script>
+  </body>
+</html>

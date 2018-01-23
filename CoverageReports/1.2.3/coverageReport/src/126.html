@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectItemMustBeIncludedByWildcardRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that the &lt;see cref=&quot;IProjectItem&quot; /&gt; is included via wildcard.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that the project item is included via wildcard.&quot;)]
+  public class ProjectItemMustBeIncludedByWildcardRule : ProjectItemRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProjectItem target)
+    {
+      if (!target.IsIncludedByWildcard)
+        yield return new RuleViolation(this, target, $&quot;Project item &#39;{target.Identifier}&#39; must be included via wildcard.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[18,7,18,40,1],[19,9,19,124,1],[20,5,20,6,1]]);
+    </script>
+  </body>
+</html>

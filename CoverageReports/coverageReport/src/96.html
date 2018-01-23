@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.Commons.Console\ConsoleHelper.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using Wrapperator.Interfaces;
+
+namespace SolutionInspector.Commons.Console
+{
+  /// &lt;summary&gt;
+  ///   Helper class to make some interactions with the console simpler.
+  /// &lt;/summary&gt;
+  public interface IConsoleHelper
+  {
+    bool Confirm (string question);
+  }
+
+  internal class ConsoleHelper : IConsoleHelper
+  {
+    private readonly IConsoleStatic _console;
+
+    public ConsoleHelper (IConsoleStatic console)
+    {
+      _console = console;
+    }
+
+    public bool Confirm (string question)
+    {
+      _console.Write($&quot;{question} [y/N] &quot;);
+      var answer = _console.ReadLine();
+      return answer != null &amp;&amp; string.Equals(answer, &quot;y&quot;, StringComparison.OrdinalIgnoreCase);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[18,5,18,50,1],[20,7,20,26,1],[25,7,25,44,1],[26,7,26,40,1],[27,7,27,95,1]]);
+    </script>
+  </body>
+</html>

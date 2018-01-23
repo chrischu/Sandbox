@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.BuildTool\RuleAssemblySchemaCreator.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
+using System.Xml.Schema;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration.Schema;
+using SolutionInspector.Configuration.Validation;
+using Wrapperator.Interfaces.Reflection;
+
+namespace SolutionInspector.BuildTool
+{
+  /// &lt;summary&gt;
+  ///   Creates a &lt;see cref=&quot;XmlSchema&quot; /&gt; from an &lt;see cref=&quot;IAssembly&quot; /&gt; containing &lt;see cref=&quot;Rule&quot; /&gt;s.
+  /// &lt;/summary&gt;
+  public interface IRuleAssemblySchemaCreator
+  {
+    XmlSchema CreateSchema (IAssembly ruleAssembly, string baseNamespace);
+  }
+
+  internal class RuleAssemblySchemaCreator : IRuleAssemblySchemaCreator
+  {
+    private readonly ISchemaInfoRetriever _schemaInfoRetriever;
+
+    public RuleAssemblySchemaCreator (ISchemaInfoRetriever schemaInfoRetriever)
+    {
+      _schemaInfoRetriever = schemaInfoRetriever;
+    }
+
+    public XmlSchema CreateSchema (IAssembly ruleAssembly, string baseNamespace)
+    {
+      var schema = new XmlSchema
+                   {
+                       TargetNamespace = ruleAssembly.GetName().Name,
+                       ElementFormDefault = XmlSchemaForm.Qualified
+                   };
+      schema.Namespaces.Add(&quot;&quot;, schema.TargetNamespace);
+      schema.Namespaces.Add(&quot;base&quot;, baseNamespace);
+
+      var baseImport = new XmlSchemaImport { Namespace = baseNamespace, SchemaLocation = baseNamespace };
+      schema.Includes.Add(baseImport);
+
+      var ruleTypes = ruleAssembly.GetTypes().Where(t =&gt; typeof(Rule).IsAssignableFrom(t) &amp;&amp; !t.IsAbstract &amp;&amp; !t.IsInterface).ToList();
+
+      if (ruleTypes.Count == 0)
+        throw new RuleAssemblyContainsNoRulesException($&quot;The assembly &#39;{ruleAssembly.GetName().Name}&#39; contains no rules.&quot;);
+
+      foreach (var ruleType in ruleTypes)
+      {
+        ConfigurationValidator.Validate(ruleType);
+        var schemaInfo = _schemaInfoRetriever.GetSchemaInfoForElement(ruleType);
+        ProcessRule(schema, baseNamespace, ruleType, schemaInfo);
+      }
+
+      ValidateSchema(schema);
+
+      return schema;
+    }
+
+    private void ProcessRule (XmlSchema schema, string baseNamespace, Type ruleType, ConfigurationElementSchemaInfo elementSchemaInfo)
+    {
+      var element = CreateElement(
+          elementSchemaInfo,
+          modifyElement: e =&gt; e.SubstitutionGroup = new XmlQualifiedName(GetSubstitutionGroupName(ruleType), baseNamespace),
+          modifyType: t =&gt; t.ContentModel = new XmlSchemaComplexContent
+                                            {
+                                                Content = new XmlSchemaComplexContentExtension
+                                                          {
+                                                              BaseTypeName = new XmlQualifiedName(GetBaseTypeName(ruleType), baseNamespace)
+                                                          }
+                                            },
+          addAttribute: (t, a) =&gt; ((XmlSchemaComplexContentExtension) t.ContentModel.Content).Attributes.Add(a),
+          setParticle: (t, p) =&gt; ((XmlSchemaComplexContentExtension) t.ContentModel.Content).Particle = p
+      );
+
+      schema.Items.Add(element);
+    }
+
+    private XmlSchemaElement CreateElement (
+        ConfigurationElementSchemaInfo elementSchemaInfo,
+        Action&lt;XmlSchemaElement&gt; modifyElement = null,
+        Action&lt;XmlSchemaComplexType&gt; modifyType = null,
+        Action&lt;XmlSchemaComplexType, XmlSchemaAttribute&gt; addAttribute = null,
+        Action&lt;XmlSchemaComplexType, XmlSchemaParticle&gt; setParticle = null)
+    {
+      addAttribute = addAttribute ?? ((t, a) =&gt; t.Attributes.Add(a));
+      setParticle = setParticle ?? ((t, p) =&gt; t.Particle = p);
+
+      var type = new XmlSchemaComplexType();
+      modifyType?.Invoke(type);
+
+      var element = new XmlSchemaElement { Name = elementSchemaInfo.Name, SchemaType = type };
+      modifyElement?.Invoke(element);
+
+      foreach (var attributeSchemaInfo in elementSchemaInfo.PossibleAttributes)
+      {
+        var attribute = new XmlSchemaAttribute
+                        {
+                            Name = attributeSchemaInfo.Name,
+                            SchemaTypeName = MapDotNetTypeToXmlSchemaType(attributeSchemaInfo.Type),
+                            Use = attributeSchemaInfo.IsRequired ? XmlSchemaUse.Required : XmlSchemaUse.Optional,
+                            DefaultValue = attributeSchemaInfo.DefaultValue
+                        };
+
+        addAttribute(type, attribute);
+      }
+
+      if (elementSchemaInfo.PossibleSubelements.Any())
+      {
+        foreach (var subElementSchemaInfo in elementSchemaInfo.PossibleSubelements)
+        {
+          var sequence = new XmlSchemaSequence();
+          var subElement = CreateElement(
+              subElementSchemaInfo,
+              modifyElement: e =&gt;
+              {
+                e.MinOccurs = subElementSchemaInfo.MinOccurs;
+
+                if (subElementSchemaInfo.MaxOccurs == int.MaxValue)
+                  e.MaxOccursString = &quot;unbounded&quot;;
+                else
+                  e.MaxOccurs = subElementSchemaInfo.MaxOccurs;
+              });
+          sequence.Items.Add(subElement);
+
+          setParticle(type, sequence);
+        }
+      }
+
+      return element;
+    }
+
+    private static readonly Dictionary&lt;Type, string&gt; s_typeMap = new Dictionary&lt;Type, string&gt;
+                                                                 {
+                                                                     { typeof(bool), &quot;boolean&quot; },
+                                                                     { typeof(int), &quot;int&quot; },
+                                                                     { typeof(short), &quot;short&quot; },
+                                                                     { typeof(long), &quot;long&quot; },
+                                                                     { typeof(float), &quot;long&quot; },
+                                                                     { typeof(double), &quot;double&quot; },
+                                                                     { typeof(decimal), &quot;decimal&quot; },
+                                                                     { typeof(DateTime), &quot;dateTime&quot; },
+                                                                     { typeof(TimeSpan), &quot;duration&quot; },
+                                                                     { typeof(Uri), &quot;anyUri&quot; }
+                                                                 };
+
+    private XmlQualifiedName MapDotNetTypeToXmlSchemaType (Type type)
+    {
+      const string xs = &quot;http://www.w3.org/2001/XMLSchema&quot;;
+      if (s_typeMap.TryGetValue(type, out string name))
+        return new XmlQualifiedName(name, xs);
+
+      return new XmlQualifiedName(&quot;string&quot;, xs);
+    }
+
+    private string GetSubstitutionGroupName (Type ruleType)
+    {
+      if (typeof(SolutionRule).IsAssignableFrom(ruleType))
+        return &quot;solutionRule&quot;;
+
+      if (typeof(ProjectRule).IsAssignableFrom(ruleType))
+        return &quot;projectRule&quot;;
+
+      return &quot;projectItemRule&quot;;
+    }
+
+    private string GetBaseTypeName (Type ruleType)
+    {
+      if (typeof(SolutionRule).IsAssignableFrom(ruleType))
+        return &quot;SolutionRuleBase&quot;;
+
+      if (typeof(ProjectRule).IsAssignableFrom(ruleType))
+        return &quot;ProjectRuleBase&quot;;
+
+      return &quot;ProjectItemRuleBase&quot;;
+    }
+
+    private void ValidateSchema (XmlSchema schema)
+    {
+      var schemaSet = new XmlSchemaSet();
+      schemaSet.Add(schema);
+      schemaSet.Compile();
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[25,5,25,80,1],[27,7,27,50,1],[32,7,36,22,1],[37,7,37,57,1],[38,7,38,52,1],[40,7,40,106,1],[41,7,41,39,1],[43,7,43,58,1],[43,58,43,125,1],[43,125,43,136,1],[43,7,43,136,1],[45,7,45,32,1],[46,9,46,124,1],[48,16,48,28,1],[48,29,48,31,1],[48,32,48,41,1],[50,9,50,51,1],[51,9,51,81,1],[52,9,52,66,1],[55,7,55,30,1],[57,7,57,21,1],[62,7,64,31,1],[64,31,64,124,1],[64,124,65,28,1],[65,28,71,46,1],[71,46,72,35,1],[72,35,72,112,1],[72,112,73,34,1],[73,34,73,106,1],[73,106,74,9,1],[62,7,74,9,1],[76,7,76,33,1],[86,7,86,49,1],[86,49,86,68,1],[86,68,86,70,1],[86,7,86,70,1],[87,7,87,47,1],[87,47,87,61,1],[87,61,87,63,1],[87,7,87,63,1],[89,7,89,45,1],[90,7,90,32,1],[92,7,92,95,1],[93,7,93,38,1],[95,16,95,39,1],[95,40,95,42,1],[95,43,95,79,1],[97,9,103,27,1],[105,9,105,39,1],[108,7,108,55,1],[110,18,110,42,1],[110,43,110,45,1],[110,46,110,83,1],[112,11,112,50,1],[113,11,117,17,1],[117,17,117,62,1],[117,62,119,17,1],[119,17,119,68,1],[119,68,120,19,1],[120,19,120,51,1],[120,51,122,19,1],[122,19,122,64,1],[122,64,123,15,1],[123,15,123,16,1],[123,16,123,18,1],[113,11,123,18,1],[124,11,124,42,1],[126,11,126,39,1],[130,7,130,22,1],[133,5,145,68,1],[150,7,150,56,1],[151,9,151,47,1],[153,7,153,49,1],[158,7,158,59,1],[159,9,159,31,1],[161,7,161,58,1],[162,9,162,30,1],[164,7,164,32,1],[169,7,169,59,1],[170,9,170,35,1],[172,7,172,58,1],[173,9,173,34,1],[175,7,175,36,1],[180,7,180,42,1],[181,7,181,29,1],[182,7,182,27,1]]);
+    </script>
+  </body>
+</html>

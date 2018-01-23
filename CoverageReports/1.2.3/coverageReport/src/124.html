@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectConfigFileShouldHaveCorrectFrameworkVersionRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Checks that the configuration file for the project (App.config/Web.config) has the correct target framework version/SKU set.
+  /// &lt;/summary&gt;
+  [Description (&quot;Checks that the configuration file for the project (App.config/Web.config) has the correct target framework version/SKU set.&quot;)]
+  public class ProjectConfigFileShouldHaveCorrectFrameworkVersionRule: ProjectConfigRuleBase
+  {
+    /// &lt;summary&gt;
+    ///   The expected framework version (e.g. &#39;v4.0&#39;)
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The expected framework version (e.g. &#39;v4.0&#39;)&quot;)]
+    public string ExpectedVersion
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;summary&gt;
+    ///   The expected SKU (e.g. &#39;.NETFramework,Version=v4.6.1&#39;).
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The expected SKU (e.g. &#39;.NETFramework,Version=v4.6.1&#39;).&quot;)]
+    public string ExpectedSKU
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    protected override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IConfigurationProjectItem target, [NotNull] XDocument configurationXml)
+    {
+      var supportedRuntimeElement = configurationXml.XPathSelectElement(&quot;/configuration/startup/supportedRuntime&quot;);
+
+      if (supportedRuntimeElement == null)
+      {
+        yield return new RuleViolation(this, target, &quot;No explicit configuration for the supported runtime version/SKU could be found.&quot;);
+      }
+      else
+      {
+        var version = supportedRuntimeElement.Attribute(&quot;version&quot;)?.Value;
+        if (version != ExpectedVersion)
+          yield return
+              new RuleViolation(
+                this,
+                target,
+                $&quot;Unexpected value for supported runtime version, was &#39;{version ?? &quot;&lt;null&gt;&quot;}&#39; but should be &#39;{ExpectedVersion}&#39;.&quot;);
+
+        var sku = supportedRuntimeElement.Attribute(&quot;sku&quot;)?.Value;
+        if (sku != ExpectedSKU)
+          yield return
+              new RuleViolation(
+                this,
+                target,
+                $&quot;Unexpected value for supported runtime SKU, was &#39;{sku ?? &quot;&lt;null&gt;&quot;}&#39; but should be &#39;{ExpectedSKU}&#39;.&quot;);
+      }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[25,14,25,45,1],[26,14,26,42,1],[36,14,36,45,1],[37,14,37,42,1]]);
+    </script>
+  </body>
+</html>

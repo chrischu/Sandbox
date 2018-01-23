@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.TestInfrastructure.Api\RuleTestBase.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Xml.Linq;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration;
+
+namespace SolutionInspector.TestInfrastructure.Api
+{
+  /// &lt;summary&gt;
+  ///   Base class for &lt;see cref=&quot;IRule&quot; /&gt; tests.
+  /// &lt;/summary&gt;
+  public abstract class RuleTestBase
+  {
+    protected T CreateRule&lt;T&gt; (Action&lt;T&gt; configure = null)
+        where T : Rule, new()
+    {
+      var document = new XDocument();
+      var element = new XElement(&quot;rule&quot;);
+      document.Add(element);
+      element.SetAttributeValue(&quot;ruleType&quot;, &quot;type&quot;);
+      return ConfigurationElement.Load&lt;T&gt;(
+          element,
+          t =&gt;
+          {
+            configure?.Invoke(t);
+          });
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[16,7,16,38,1],[17,7,17,42,1],[18,7,18,29,1],[19,7,19,53,1],[20,7,24,13,1],[24,13,24,34,1],[24,34,25,11,1],[25,11,25,12,1],[25,12,25,14,1],[20,7,25,14,1]]);
+    </script>
+  </body>
+</html>

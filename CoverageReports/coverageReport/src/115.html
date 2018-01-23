@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector\Reporting\VisualStudioViolationReporter.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.IO;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.Reporting
+{
+  internal class VisualStudioViolationReporter : ViolationReporterBase
+  {
+    public VisualStudioViolationReporter (TextWriter writer)
+      : base(writer)
+    {
+    }
+
+    protected override void Report (TextWriter writer, IEnumerable&lt;IRuleViolation&gt; violations)
+    {
+      foreach (var violation in violations)
+        writer.WriteLine(
+          $&quot;{violation.Target.FullPath}: SolutionInspector warning SI0000: &quot; +
+          $&quot;{violation.Message} ({violation.Rule.GetType().Name.RemoveSuffix(&quot;Rule&quot;)})&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[11,9,11,21,1],[17,16,17,29,1],[17,30,17,32,1],[17,33,17,43,1],[18,9,20,90,1]]);
+    </script>
+  </body>
+</html>

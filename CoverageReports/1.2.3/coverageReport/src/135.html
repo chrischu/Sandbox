@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectShouldNotContainProjectPropertiesWithDuplicateNameRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all &lt;see cref=&quot;IProjectProperty&quot; /&gt;s included in the project have unique names.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that all project properties included in the project have unique names.&quot;)]
+  public class ProjectShouldNotContainProjectPropertiesWithDuplicateNameRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      foreach (var property in target.Advanced.Properties.Values)
+      {
+        var groupedByCondition = property.Occurrences.GroupBy(o =&gt; o.Condition);
+
+        foreach (var group in groupedByCondition.Where(g =&gt; g.ContainsMoreThanOne()))
+          yield return new RuleViolation(
+            this,
+            target,
+            $&quot;There are multiple project properties with name &#39;{property.Name}&#39; and the same conditions in the following locations: &quot; +
+            $&quot;{group.ConvertAndJoin(i =&gt; i.Location, &quot;, &quot;)}.&quot;);
+      }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,16,20,28,1],[20,29,20,31,1],[20,32,20,65,1],[22,9,22,68,1],[22,68,22,79,1],[22,79,22,81,1],[22,9,22,81,1],[24,18,24,27,1],[24,28,24,30,1],[24,31,24,61,1],[24,61,24,84,1],[24,84,24,85,1],[24,31,24,85,1],[25,11,29,42,1],[29,42,29,52,1],[29,52,29,64,1],[25,11,29,64,1],[30,7,30,8,1],[31,5,31,6,1]]);
+    </script>
+  </body>
+</html>

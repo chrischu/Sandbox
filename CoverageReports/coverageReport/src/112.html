@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector\Reporting\RuleViolationViewModelConverter.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.Reporting
+{
+  internal interface IRuleViolationViewModelConverter
+  {
+    IEnumerable&lt;RuleViolationViewModel&gt; Convert (IEnumerable&lt;IRuleViolation&gt; violations);
+  }
+
+  [UsedImplicitly]
+  internal class RuleViolationViewModelConverter : IRuleViolationViewModelConverter
+  {
+    public IEnumerable&lt;RuleViolationViewModel&gt; Convert (IEnumerable&lt;IRuleViolation&gt; violations)
+    {
+      return violations.Select(v =&gt; new { Rule = v.Rule.GetType().Name.RemoveSuffix(&quot;Rule&quot;), Target = v.Target.Identifier, v.Message })
+          .OrderBy(v =&gt; v.Rule).ThenBy(v =&gt; v.Target)
+          .Select((x, i) =&gt; new RuleViolationViewModel(i + 1, x.Rule, x.Target, x.Message));
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[19,7,19,37,1],[19,37,19,135,1],[19,135,20,25,1],[20,25,20,31,1],[20,31,20,45,1],[20,45,20,53,1],[20,53,21,29,1],[21,29,21,91,1],[21,91,21,93,1],[19,7,21,93,1]]);
+    </script>
+  </body>
+</html>

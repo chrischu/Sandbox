@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectReferencesMustBeValidRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all &lt;see cref=&quot;IProjectReference&quot; /&gt;s in the project are valid (i.e. point to existing csproj files included in the solution
+  ///   and have the correct project GUID).
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that all project references in the project are valid (i.e. point to existing csproj files included in the solution &quot; +
+                &quot;and have the correct project GUID).&quot;)]
+  public class ProjectReferencesMustBeValidRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      foreach (var projectReference in target.ProjectReferences)
+        if (projectReference.ReferencedProjectGuid == null)
+        {
+          yield return
+              new RuleViolation(
+                this,
+                target,
+                $&quot;The reference to project &#39;{projectReference.ReferencedProjectName}&#39; (&#39;{projectReference.Include}&#39;) is invalid because it does &quot; +
+                &quot;not specify the project GUID of the referenced project.&quot;);
+        }
+        else
+        {
+          if (projectReference.Project == null)
+          {
+            var projectReferencedByGuid = target.Solution.GetProjectByProjectGuid(projectReference.ReferencedProjectGuid.Value);
+            if (projectReferencedByGuid != null)
+              yield return
+                  new RuleViolation(
+                    this,
+                    target,
+                    $&quot;The reference to project &#39;{projectReference.ReferencedProjectName}&#39; (&#39;{projectReference.Include}&#39;) is invalid because the &quot; +
+                    &quot;referenced project file could not be found. However, there is a project that matches the given project guid: &quot; +
+                    $&quot;&#39;{projectReferencedByGuid.Name}&#39; (&#39;{target.GetIncludePathFor(projectReferencedByGuid)}&#39;). Did you mean to reference that one?&quot;)
+                  ;
+            else
+              yield return
+                  new RuleViolation(
+                    this,
+                    target,
+                    $&quot;The reference to project &#39;{projectReference.ReferencedProjectName}&#39; (&#39;{projectReference.Include}&#39;) is invalid because the &quot; +
+                    &quot;referenced project file could not be found and the solution does not contain a project that at least matches the specified&quot; +
+                    $&quot;referenced project GUID ({projectReference.ReferencedProjectGuid.Value}).&quot;);
+          }
+          else
+          {
+            if (projectReference.Project.Guid != projectReference.ReferencedProjectGuid.Value)
+              yield return
+                  new RuleViolation(
+                    this,
+                    target,
+                    $&quot;The reference to project &#39;{projectReference.ReferencedProjectName}&#39; (&#39;{projectReference.Include}&#39;) is invalid because the&quot; +
+                    $&quot;specified project GUID for the referenced project ({projectReference.ReferencedProjectGuid.Value}) does not match the &quot; +
+                    $&quot;project GUID of the actually referenced project ({projectReference.Project.Guid}).&quot;);
+          }
+        }
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,16,20,36,1],[20,37,20,39,1],[20,40,20,64,1],[21,9,21,60,1],[23,11,28,76,1],[29,9,29,10,1],[32,11,32,48,1],[34,13,34,129,1],[35,13,35,49,1],[36,15,43,20,1],[45,15,51,99,1],[52,11,52,12,1],[55,13,55,95,1],[56,15,62,108,1],[65,5,65,6,1]]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectPropertyRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that a project&#39;s property has the expected value.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that a project&#39;s property has the expected value.&quot;)]
+  public class ProjectPropertyRule : ProjectRule
+  {
+    /// &lt;summary&gt;
+    ///   The property to check.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The property to check.&quot;)]
+    public string Property
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;summary&gt;
+    ///   The expected property value to check against.
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description (&quot;The expected property value to check against.&quot;)]
+    public string ExpectedValue
+    {
+      get =&gt; GetConfigurationValue&lt;string&gt;();
+      set =&gt; SetConfigurationValue(value);
+    }
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      var actualValue = target.Advanced.Properties.GetValueOrDefault(Property)?.DefaultValue;
+
+      if (actualValue != ExpectedValue)
+        yield return
+            new RuleViolation(
+              this,
+              target,
+              $&quot;Unexpected value for property &#39;{Property}&#39;, was &#39;{actualValue ?? &quot;&lt;null&gt;&quot;}&#39; &quot; +
+              $&quot;but should be &#39;{ExpectedValue}&#39;.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[24,14,24,45,1],[25,14,25,42,1],[35,14,35,45,1],[36,14,36,42,1],[42,7,42,94,1],[44,7,44,40,1],[45,9,50,52,1],[51,5,51,6,1]]);
+    </script>
+  </body>
+</html>

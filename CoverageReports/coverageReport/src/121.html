@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\NuGetPackagesShouldHaveOneVersionAcrossSolutionRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that every NuGet package is only referenced in one version across all projects.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that every NuGet package is only referenced in one version across all projects.&quot;)]
+  public class NuGetPackagesShouldHaveOneVersionAcrossSolutionRule : SolutionRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] ISolution target)
+    {
+      var nuGetPackagesWithMultipleVersions =
+          target.Projects.SelectMany(p =&gt; p.NuGetPackages)
+              .GroupBy(p =&gt; p.Id, p =&gt; p.FullVersionString)
+              .Where(g =&gt; g.Distinct().Count() &gt; 1);
+
+      return from @group in nuGetPackagesWithMultipleVersions
+          let versions = @group.Select(v =&gt; $&quot;&#39;{v}&#39;&quot;)
+          select new RuleViolation(
+            this,
+            target,
+            $&quot;The NuGet package &#39;{@group.Key}&#39; is referenced &quot; +
+            $&quot;in more than one version ({versions.Join(&quot;, &quot;)}).&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,7,21,43,1],[21,43,21,58,1],[21,58,22,29,1],[22,29,22,33,1],[22,33,22,40,1],[22,40,22,59,1],[22,59,23,27,1],[23,27,23,51,1],[23,51,23,53,1],[20,7,23,53,1],[25,7,26,26,1],[26,26,26,45,1],[26,45,26,53,1],[26,53,26,54,1],[26,26,26,54,1],[26,54,27,18,1],[27,18,31,66,1],[31,66,31,67,1],[25,7,31,67,1]]);
+    </script>
+  </body>
+</html>

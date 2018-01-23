@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\ProjectShouldNotContainProjectItemsWithDuplicateIncludesRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Extensions;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all &lt;see cref=&quot;IProjectItem&quot; /&gt;s included in the project are unique.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that all project items included in the project are unique.&quot;)]
+  public class ProjectShouldNotContainProjectItemsWithDuplicateIncludesRule : ProjectRule
+  {
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      return target.ProjectItems.GroupBy(i =&gt; i.Include.Evaluated).Where(g =&gt; g.ContainsMoreThanOne()).Select(
+        group =&gt; new RuleViolation(
+          this,
+          target,
+          $&quot;There are multiple project items with include &#39;{group.Key}&#39; in the following locations: &quot; +
+          $&quot;{group.ConvertAndJoin(i =&gt; i.Location, &quot;, &quot;)}.&quot;));
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[20,7,20,47,1],[20,47,20,66,1],[20,66,20,79,1],[20,79,20,102,1],[20,102,21,18,1],[21,18,25,40,1],[25,40,25,50,1],[25,50,25,61,1],[21,18,25,61,1],[25,61,25,63,1],[20,7,25,63,1]]);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\RequiredNuGetPackagesRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Configuration;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that the project references all the NuGet packages configured via &lt;see cref=&quot;RequiredNuGetPackages&quot; /&gt;.
+  /// &lt;/summary&gt;
+  [Description(&quot;Verifies that the project references all the configured NuGet packages.&quot;)]
+  public class RequiredNuGetPackagesRule : ProjectRule
+  {
+    /// &lt;summary&gt;
+    ///   All the required NuGet package ids (e.g. &#39;Autofac&#39;).
+    /// &lt;/summary&gt;
+    [ConfigurationValue]
+    [Description(&quot;All the required NuGet package ids (e.g. &#39;Autofac&#39;).&quot;)]
+    public CommaSeparatedStringCollection RequiredNuGetPackages =&gt; GetConfigurationValue&lt;CommaSeparatedStringCollection&gt;();
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] IProject target)
+    {
+      foreach (var requiredNuGetPackageId in RequiredNuGetPackages)
+        if (target.NuGetPackages.All(p =&gt; p.Id != requiredNuGetPackageId))
+          yield return new RuleViolation(this, target, $&quot;Required NuGet package &#39;{requiredNuGetPackageId}&#39; is missing.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[24,68,24,123,1],[29,16,29,42,1],[29,43,29,45,1],[29,46,29,67,1],[30,9,30,43,1],[30,43,30,73,1],[30,73,30,75,1],[30,9,30,75,1],[31,11,31,122,1],[32,5,32,6,1]]);
+    </script>
+  </body>
+</html>

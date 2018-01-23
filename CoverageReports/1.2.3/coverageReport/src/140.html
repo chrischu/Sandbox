@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>C:\Development\SolutionInspector\src\SolutionInspector.DefaultRules\SolutionBuildConfigurationsRule.cs</title>
+    <script type="text/javascript" src="../js/dotcover.sourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/dotcover.report.css" />
+  </head>
+  <body>
+    <pre id="content" class="source-code">
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using JetBrains.Annotations;
+using SolutionInspector.Api.ObjectModel;
+using SolutionInspector.Api.Rules;
+using SolutionInspector.Commons.Utilities;
+using SolutionInspector.Configuration;
+using SolutionInspector.Configuration.Attributes;
+
+namespace SolutionInspector.DefaultRules
+{
+  /// &lt;summary&gt;
+  ///   Verifies that all expected combinations of build configuration/platform are present in the solution.
+  /// &lt;/summary&gt;
+  [Description (&quot;Verifies that all expected combinations of build configuration/platform are present in the solution.&quot;)]
+  public class SolutionBuildConfigurationsRule : SolutionRule
+  {
+    private readonly ICollectionDifferenceFinder _collectionDifferenceFinder;
+
+    /// &lt;inheritdoc /&gt;
+    public SolutionBuildConfigurationsRule ()
+    {
+      _collectionDifferenceFinder = new CollectionDifferenceFinder();
+    }
+
+    /// &lt;summary&gt;
+    ///   &quot;A list of expected configurations (e.g. &#39;Build&#39;, &#39;Release&#39;).&quot;
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    [ConfigurationValue (AttributeName = &quot;expectedConfigurations&quot;)]
+    [Description (&quot;A list of expected configurations (e.g. &#39;Build&#39;, &#39;Release&#39;).&quot;)]
+    public CommaSeparatedStringCollection Configurations =&gt; GetConfigurationValue&lt;CommaSeparatedStringCollection&gt;();
+
+    /// &lt;summary&gt;
+    ///   A list of expected platforms (e.g. &#39;Any CPU&#39;, &#39;x64&#39;).
+    /// &lt;/summary&gt;
+    [CanBeNull]
+    [ConfigurationValue (AttributeName = &quot;expectedPlatforms&quot;)]
+    [Description (&quot;A list of expected platforms (e.g. &#39;Any CPU&#39;, &#39;x64).&quot;)]
+    public CommaSeparatedStringCollection Platforms =&gt; GetConfigurationValue&lt;CommaSeparatedStringCollection&gt;();
+
+    /// &lt;inheritdoc /&gt;
+    public override IEnumerable&lt;IRuleViolation&gt; Evaluate ([NotNull] ISolution target)
+    {
+      var expectedConfigurations = from config in Configurations
+          from platform in Platforms
+          select new BuildConfiguration(config, platform);
+
+      var differences = _collectionDifferenceFinder.FindDifferences(expectedConfigurations, target.BuildConfigurations);
+
+      foreach (var add in differences.Adds)
+        yield return new RuleViolation(this, target, $&quot;Unexpected build configuration &#39;{add}&#39; found.&quot;);
+
+      foreach (var remove in differences.Removes)
+        yield return new RuleViolation(this, target, $&quot;Build configuration &#39;{remove}&#39; could not be found.&quot;);
+    }
+  }
+}
+    </pre>
+    <script type="text/javascript">
+      highlightRanges([[23,5,23,46,1],[25,7,25,70,1],[34,61,34,116,1],[42,56,42,111,1],[47,7,48,28,1],[48,28,48,37,1],[48,37,49,18,1],[49,18,49,58,1],[49,58,49,59,1],[47,7,49,59,1],[51,7,51,121,1],[53,16,53,23,1],[53,24,53,26,1],[53,27,53,43,1],[54,9,54,104,1],[56,16,56,26,1],[56,27,56,29,1],[56,30,56,49,1],[57,9,57,109,1],[58,5,58,6,1]]);
+    </script>
+  </body>
+</html>
